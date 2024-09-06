@@ -38,9 +38,11 @@ namespace Quiz_DataBank.Controllers
             string query = $"select * from Roles_mst";
             var connection = new LkDataConnection.Connection();
 
-            var result = connection.bindmethod(query);
+            //var result = connection.bindmethod(query);
 
-            DataTable Table = result._DataTable;           
+            //DataTable Table = result._DataTable;           
+            DataTable Table = _connection.ExecuteQueryWithResult(query);
+
             var RoleList = new List<RolesModel>();
             foreach (DataRow row in Table.Rows)
             {
@@ -69,9 +71,12 @@ namespace Quiz_DataBank.Controllers
 
                 if (isDuplicate)
                 {
-                    return BadRequest("RoleName already exists.");
+                    return Ok("RoleName already exists.");
                 }
-
+                if (String.IsNullOrEmpty(role.RoleName))
+                {
+                    return Ok("RoleName Can't be Blank Or Null ");
+                }
                 _query = _dc.InsertOrUpdateEntity(role, "Roles_mst", -1);
 
 
@@ -96,12 +101,16 @@ namespace Quiz_DataBank.Controllers
 
                 bool isDuplicate = duplicacyChecker.CheckDuplicate("Roles_mst",
                  new[] { "RoleName" },
-                 new[] { role.RoleName },
-                 "Role_ID");
+                 new[] { role.RoleName  },
+                 "Role_ID" , Role_ID.ToString());
 
                 if (isDuplicate)
                 {
-                    return BadRequest("Duplicate RoleName exists.");
+                    return Ok("Duplicate RoleName exists.");
+                }
+                if (String.IsNullOrEmpty(role.RoleName) )
+                {
+                    return Ok("RoleName Can't be Blank Or Null ");
                 }
                 _query = _dc.InsertOrUpdateEntity(role, "Roles_mst", Role_ID, "Role_ID");
                 return Ok("RoleName Updated Successfully");

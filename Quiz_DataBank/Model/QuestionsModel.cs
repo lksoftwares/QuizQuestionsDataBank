@@ -12,6 +12,10 @@
         public string? Status { get; set; }
         public int? Topic_ID { get; set; }
         public string? Topic_Name { get; set; }
+        public int? QuesType_ID { get; set; }
+        public string? Remarks { get; set; }
+        public string? QuesType_Label { get; set; }
+        public string? QuesType_Value { get; set; }
 
     }
 }

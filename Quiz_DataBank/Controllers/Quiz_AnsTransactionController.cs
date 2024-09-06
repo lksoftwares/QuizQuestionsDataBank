@@ -8,14 +8,14 @@ using System.Data;
 namespace Quiz_DataBank.Controllers
 {
     [Authorize]
-    [Route("api/[controller]")]
+    [Route("/[controller]")]
     [ApiController]
-    public class Quiz_TransactionController : ControllerBase
+    public class Quiz_AnsTransactionController : ControllerBase
     {
         private readonly Quiz_DataBank.Classes.Connection _connection;
         private LkDataConnection.DataAccess _dc;
         private LkDataConnection.SqlQueryResult _query;
-        public Quiz_TransactionController(Quiz_DataBank.Classes.Connection connection)
+        public Quiz_AnsTransactionController(Quiz_DataBank.Classes.Connection connection)
         {
             _connection = connection;
             DataAccessMethod();
@@ -63,7 +63,7 @@ namespace Quiz_DataBank.Controllers
         public IActionResult GetQuestionBasedOnTopic([FromQuery] IDictionary<string, string> param)
 
         {
-            string query = $"select QZ.*,U.User_Name,U.User_Email,Q.*,T.Topic_Name  from Quiz_Transaction_mst QZ join Questions_mst Q ON  Q.Ques_ID=QZ.Ques_ID Join Users_mst U ON U.User_ID=QZ.User_ID  join Topics_mst T On T.Topic_ID=Q.Topic_ID   ";
+            string query = $"select QZ.*,U.User_Name,U.User_Email,Q.*,T.Topic_Name  from Quiz_AnsTransaction_mst QZ join Questions_mst Q ON  Q.Ques_ID=QZ.Ques_ID Join Users_mst U ON U.User_ID=QZ.User_ID  join Topics_mst T On T.Topic_ID=Q.Topic_ID   ";
 
             List<string> filter = new List<string>();
             Dictionary<string, object> sqlparams = new Dictionary<string, object>();
@@ -98,10 +98,10 @@ namespace Quiz_DataBank.Controllers
             DataTable Table = _connection.ExecuteQueryWithResults(query, sqlparams);
 
 
-            var Ansewers_List = new List<Quiz_TransactionModel>();
+            var Ansewers_List = new List<Quiz_AnsTransactionModel>();
             foreach (DataRow row in Table.Rows)
             {
-                Ansewers_List.Add(new Quiz_TransactionModel
+                Ansewers_List.Add(new Quiz_AnsTransactionModel
                 {
                     Answer_ID = Convert.ToInt32(row["Answer_ID"]),
                     Ques_ID = Convert.ToInt32(row["Ques_ID"]),
@@ -131,26 +131,31 @@ namespace Quiz_DataBank.Controllers
 
         [HttpPost]
         [Route("SubmitAnswer")]
-        public IActionResult SubmitAnswer([FromBody] List<Quiz_TransactionModel> quizList)
+        public IActionResult SubmitAnswer([FromBody] List<Quiz_AnsTransactionModel> quizList)
         {
             if (quizList == null || quizList.Count == 0)
             {
-                return BadRequest("No answers to submit.");
+                return Ok("No answers to submit.");
             }
 
             try
             {
-                string insertQuery = "INSERT INTO Quiz_Transaction_mst (Ques_ID, User_ID, Answer) VALUES ";
+
+              
+
+                string insertQuery = "INSERT INTO Quiz_AnsTransaction_mst (Ques_ID, User_ID, Answer) VALUES ";
 
                 List<string> valueRows = new List<string>();
                 foreach (var quiz in quizList)
                 {
-                    valueRows.Add($"({quiz.Ques_ID}, {quiz.User_ID}, {quiz.Ques_ID})");
+                    valueRows.Add($"({quiz.Ques_ID}, {quiz.User_ID}, '{quiz.Answer}')");
                 }
 
                 insertQuery += string.Join(", ", valueRows);
+                var connection = new LkDataConnection.Connection();
 
-               _connection.ExecuteQueryWithResult(insertQuery);
+               connection.bindmethod(insertQuery);
+             
 
                 return Ok("Answers Submitted Successfully");
             }

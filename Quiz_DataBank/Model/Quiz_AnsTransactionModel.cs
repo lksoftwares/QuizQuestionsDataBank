@@ -1,6 +1,6 @@
 ﻿namespace Quiz_DataBank.Model
 {
-    public class Quiz_TransactionModel
+    public class Quiz_AnsTransactionModel
     {
         public int? Answer_ID { get; set; }
         public int? Ques_ID { get; set; }

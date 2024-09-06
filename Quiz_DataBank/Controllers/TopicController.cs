@@ -9,7 +9,7 @@ using System.Data.Common;
 using Microsoft.AspNetCore.Authorization;
 namespace Quiz_DataBank.Controllers
 {
-    [Authorize]
+    //[Authorize]
     [Route("/[controller]")]
     [ApiController]
     public class TopicController : ControllerBase
@@ -40,24 +40,28 @@ namespace Quiz_DataBank.Controllers
         public IActionResult GetAllTopics()
         {
             string query = $"select * from Topics_mst";
-            var connection = new LkDataConnection.Connection();
+            //var connection = new LkDataConnection.Connection();
 
-            var result = connection.bindmethod(query);
+            //var result = connection.bindmethod(query);
 
-            DataTable Table = result._DataTable;
+            //DataTable Table = result._DataTable;
+            DataTable Table = _connection.ExecuteQueryWithResult(query);
+
             var TopicsList = new List<TopicsModel>();
             foreach (DataRow row in Table.Rows)
             {
                 TopicsList.Add(new TopicsModel
                 {
-                    Topic_ID = Convert.ToInt32(row["Topic_ID"]),
-                    Topic_Name = row["Topic_Name"].ToString(),
+                    Topic_ID = row["Topic_ID"] != DBNull.Value ? Convert.ToInt32(row["Topic_ID"]) : 0,
+
+                    Topic_Name = row["Topic_Name"].ToString() ?? string.Empty,
 
                 });
             }
             return Ok(TopicsList);
         }
         // -------------------------AddTopics------------------------------
+        [AllowAnonymous]
         [HttpPost]
         [Route("AddTopic")]
         public IActionResult AddTopics([FromBody] TopicsModel topic)
@@ -74,7 +78,11 @@ namespace Quiz_DataBank.Controllers
 
                 if (isDuplicate)
                 {
-                    return BadRequest("Topics already exists.");
+                    return Ok("Topics already exists.");
+                }
+                if (String.IsNullOrEmpty(topic.Topic_Name))
+                {
+                    return Ok("Topic Name Can't be Blank Or Null ");
                 }
                 _query = _dc.InsertOrUpdateEntity(topic, "Topics_mst", -1);
 
@@ -98,16 +106,21 @@ namespace Quiz_DataBank.Controllers
         {
             try
             {
+               // Console.WriteLine(FromBody);
                 var duplicacyChecker = new CheckDuplicacy(_connection);
 
                 bool isDuplicate = duplicacyChecker.CheckDuplicate("Topics_mst",
                  new[] { "Topic_Name" },
                  new[] { topic.Topic_Name },
-                 "Topic_ID");
+                 "Topic_ID", Topic_ID.ToString());
 
                 if (isDuplicate)
                 {
-                    return BadRequest("Duplicate ! Topic exists.");
+                    return Ok("Duplicate ! Topic exists.");
+                }
+                if (String.IsNullOrEmpty(topic.Topic_Name))
+                {
+                    return Ok("Topic Name Can't be Blank Or Null ");
                 }
                 _query = _dc.InsertOrUpdateEntity(topic, "Topics_mst", Topic_ID, "Topic_ID");
                 return Ok("Topic Updated Successfully");

@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Quiz_DataBank.Classes;
 using Quiz_DataBank.Model;
@@ -39,19 +40,20 @@ namespace Quiz_DataBank.Controllers
             public IActionResult GetAllQuesType()
             {
                 string query = $"select * from Question_Type_mst";
-                var connection = new LkDataConnection.Connection();
+            //var connection = new LkDataConnection.Connection();
+            //var result = connection.bindmethod(query);
 
-                var result = connection.bindmethod(query);
+            //DataTable Table = result._DataTable;
+            DataTable Table = _connection.ExecuteQueryWithResult(query);
 
-                DataTable Table = result._DataTable;
-                var ques_TypeList = new List<Ques_TypeModel>();
+            var ques_TypeList = new List<Ques_TypeModel>();
                 foreach (DataRow row in Table.Rows)
                 {
                 ques_TypeList.Add(new Ques_TypeModel
                     {
-                        QuesType_ID = Convert.ToInt32(row["QuesType_ID"]),
-                        QuesType_Label = row["QuesType_Label"].ToString(),
-                        QuesType_Value = row["QuesType_Value"].ToString(),
+                        QuesType_ID = row["QuesType_ID"] != DBNull.Value ? Convert.ToInt32(row["QuesType_ID"]) : 0,
+                        QuesType_Label = row["QuesType_Label"].ToString() ?? string.Empty,
+                        QuesType_Value = row["QuesType_Value"].ToString() ?? string.Empty,
 
 
                     });
@@ -75,7 +77,7 @@ namespace Quiz_DataBank.Controllers
 
                     if (isDuplicate)
                     {
-                        return BadRequest("Question_Type already exists.");
+                        return Ok("Question_Type already exists.");
                     }
                     _query = _dc.InsertOrUpdateEntity(quesType, "Question_Type_mst", -1);
 
@@ -104,11 +106,11 @@ namespace Quiz_DataBank.Controllers
                     bool isDuplicate = duplicacyChecker.CheckDuplicate("Question_Type_mst",
                      new[] { "QuesType_Value" },
                      new[] { quesType.QuesType_Value },
-                     "QuesType_ID");
+                     "QuesType_ID", QuesType_ID.ToString());
 
                     if (isDuplicate)
                     {
-                        return BadRequest("Duplicate ! Question_Type exists.");
+                        return Ok("Duplicate ! Question_Type exists.");
                     }
                     _query = _dc.InsertOrUpdateEntity(quesType, "Question_Type_mst", QuesType_ID, "QuesType_ID");
                     return Ok("Question_Type Updated Successfully");
