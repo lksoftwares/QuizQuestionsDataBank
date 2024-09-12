@@ -1,9 +1,11 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Quiz_DataBank.Classes;
 using Quiz_DataBank.Model;
 using System.Data;
+using System.Net.Security;
 
 namespace Quiz_DataBank.Controllers
 {
@@ -59,7 +61,7 @@ namespace Quiz_DataBank.Controllers
 
 
         [HttpGet]
-        [Route("QuizTransaction")]
+        [Route("QuizAnsTransaction")]
         public IActionResult GetQuestionBasedOnTopic([FromQuery] IDictionary<string, string> param)
 
         {
@@ -129,6 +131,107 @@ namespace Quiz_DataBank.Controllers
 
         }
 
+        //[HttpPost]
+        //[Route("SubmitAnswer")]
+        //public IActionResult SubmitAnswer([FromBody] List<Quiz_AnsTransactionModel> quizList)
+        //{
+        //    if (quizList == null || quizList.Count == 0)
+        //    {
+        //        return Ok("No answers to submit.");
+        //    }
+
+        //    try
+        //    {
+
+
+
+        //        string insertQuery = "INSERT INTO Quiz_AnsTransaction_mst (Ques_ID, User_ID, Answer) VALUES ";
+
+        //        List<string> valueRows = new List<string>();
+        //        foreach (var quiz in quizList)
+        //        {
+        //            valueRows.Add($"({quiz.Ques_ID}, {quiz.User_ID}, '{quiz.Answer}')");
+        //        }
+
+        //        insertQuery += string.Join(", ", valueRows);
+        //        var connection = new LkDataConnection.Connection();
+
+        //        connection.bindmethod(insertQuery);
+
+
+        //        return Ok("Answers Submitted Successfully");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(StatusCodes.Status500InternalServerError, $"Error: {ex.Message}");
+        //    }
+        //}
+        //[AllowAnonymous]
+        //[HttpPost]
+        //[Route("SubmitAnswer")]
+        //public IActionResult SubmitAnswer([FromBody] List<Quiz_AnsTransactionModel> quizList)
+        //{
+        //    if (quizList == null || quizList.Count == 0)
+        //    {
+        //        return Ok("No answers to submit.");
+        //    }
+
+
+        //    try
+        //    {
+        //        foreach (var quiz in quizList)
+        //        {
+        //            string checkQuery = $"SELECT Quiz_Date, Allowed_Time FROM Quiz_Transaction_mst WHERE Ques_ID = {quiz.Ques_ID} AND User_ID = {quiz.User_ID}";
+        //            var connection = new LkDataConnection.Connection();
+        //            var parameters = new Dictionary<string, object>
+        //    {
+
+        //    };
+
+        //            DataTable transactionDetails = _connection.ExecuteQueryWithResults(checkQuery, parameters);
+
+        //            if (transactionDetails.Rows.Count > 0)
+        //            {
+
+        //                DateTime quizStartTime = Convert.ToDateTime(transactionDetails.Rows[0]["Quiz_Date"]);
+        //                int allowedTimeInMinutes = Convert.ToInt32(transactionDetails.Rows[0]["Allowed_Time"]);
+
+
+        //                DateTime quizEndTime = quizStartTime.AddMinutes(allowedTimeInMinutes);
+
+
+        //                if (DateTime.Now > quizEndTime)
+        //                {
+        //                    return Ok($"Time limit exceeded for Question ID {quiz.Ques_ID}. Answers cannot be submitted.");
+        //                }
+        //            }
+        //            else
+        //            {
+        //                return StatusCode(StatusCodes.Status404NotFound, $"Quiz transaction not found for Question ID {quiz.Ques_ID} and User ID {quiz.User_ID}.");
+        //            }
+        //        }
+
+
+        //        string insertQuery = "INSERT INTO Quiz_AnsTransaction_mst (Ques_ID, User_ID, Answer) VALUES ";
+        //        List<string> valueRows = new List<string>();
+        //        foreach (var quiz in quizList)
+        //        {
+        //            valueRows.Add($"({quiz.Ques_ID}, {quiz.User_ID}, '{quiz.Answer}')");
+        //        }
+
+        //        insertQuery += string.Join(", ", valueRows);
+        //        var connectionInsert = new LkDataConnection.Connection();
+
+        //        connectionInsert.bindmethod(insertQuery);
+
+        //        return Ok("Answers Submitted Successfully");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(StatusCodes.Status500InternalServerError, $"Error: {ex.Message}");
+        //    }
+        //}
+        [AllowAnonymous]
         [HttpPost]
         [Route("SubmitAnswer")]
         public IActionResult SubmitAnswer([FromBody] List<Quiz_AnsTransactionModel> quizList)
@@ -140,22 +243,59 @@ namespace Quiz_DataBank.Controllers
 
             try
             {
+                foreach (var quiz in quizList)
+                {
+                    string checkQuery = $"SELECT Quiz_Date, Allowed_Time FROM Quiz_Transaction_mst WHERE Ques_ID = {quiz.Ques_ID} AND User_ID = {quiz.User_ID}";
+                    var connection = new LkDataConnection.Connection();
+                    var parameters = new Dictionary<string, object>
+                    {
+                    };
 
-              
+                    DataTable transactionDetails = _connection.ExecuteQueryWithResults(checkQuery, parameters);
+
+                    if (transactionDetails.Rows.Count > 0)
+                    {
+                        DateTime quizStartTime = Convert.ToDateTime(transactionDetails.Rows[0]["Quiz_Date"]);
+                        int allowedTimeInMinutes = Convert.ToInt32(transactionDetails.Rows[0]["Allowed_Time"]);
+
+                        DateTime quizEndTime = quizStartTime.AddMinutes(allowedTimeInMinutes);
+
+                        if (DateTime.Now > quizEndTime)
+                        {
+                            return Ok($"Time limit exceeded for Question ID {quiz.Ques_ID}. Answers cannot be submitted.");
+                        }
+                        var checkDuplicacy = $"SELECT * FROM Quiz_AnsTransaction_mst WHERE (Ques_ID = {quiz.Ques_ID} AND User_ID = {quiz.User_ID})";
+
+                        DataTable result = _connection.ExecuteQueryWithResult(checkDuplicacy);
+                        if (result.Rows.Count > 0)
+                        {
+                            return Ok($"Duplicate submission detected for Question ID {quiz.Ques_ID} and User ID {quiz.User_ID}. Answers cannot be submitted.");
+
+                        }
+
+
+                    }
+                        
+                   
+                    
+                    else
+                    {
+                        return StatusCode(StatusCodes.Status404NotFound, $"Quiz transaction not found for Question ID {quiz.Ques_ID} and User ID {quiz.User_ID}.");
+                    }
+                }
 
                 string insertQuery = "INSERT INTO Quiz_AnsTransaction_mst (Ques_ID, User_ID, Answer) VALUES ";
-
                 List<string> valueRows = new List<string>();
+
                 foreach (var quiz in quizList)
                 {
                     valueRows.Add($"({quiz.Ques_ID}, {quiz.User_ID}, '{quiz.Answer}')");
                 }
 
                 insertQuery += string.Join(", ", valueRows);
-                var connection = new LkDataConnection.Connection();
+                var connectionInsert = new LkDataConnection.Connection();
 
-               connection.bindmethod(insertQuery);
-             
+                connectionInsert.bindmethod(insertQuery);
 
                 return Ok("Answers Submitted Successfully");
             }
@@ -165,5 +305,49 @@ namespace Quiz_DataBank.Controllers
             }
         }
 
-    }
+        //================================================TotalQuizAnsTransaction======================
+        [HttpGet]
+        [Route("TotalQuizAnsTransaction")]
+        public IActionResult TotalQuizAnsTransaction()
+        {
+            string query = $"  SELECT COUNT(DISTINCT Answer_Date) AS TotalTests FROM Quiz_AnsTransaction_mst;";
+
+            //var connection
+            //= new LkDataConnection.Connection();
+
+            //var result = connection.bindmethod(query);
+            //DataTable Table = result._DataTable;
+            DataTable Table = _connection.ExecuteQueryWithResult(query);
+
+            if (Table.Rows.Count > 0)
+            {
+                int totalTest = Convert.ToInt32(Table.Rows[0]["TotalTests"]);
+                return Ok(new { TotalTest= totalTest });
+            }
+
+            return Ok(new { TotalQuestions = 0 });
+        }
+        [HttpGet]
+        [Route("TodayAnsTransaction")]
+        public IActionResult TodayAnsTransaction()
+        {
+            string query = $" SELECT COUNT(DISTINCT User_ID) AS TotalRecordsSubmittedToday   FROM Quiz_AnsTransaction_mst   WHERE CAST(Answer_Date AS DATE) = CAST(GETDATE() AS DATE);";
+
+            //var connection = new LkDataConnection.Connection();
+
+            //var result = connection.bindmethod(query);
+            //DataTable Table = result._DataTable;
+            DataTable Table = _connection.ExecuteQueryWithResult(query);
+
+            if (Table.Rows.Count > 0)
+            {
+                int totalTestToday = Convert.ToInt32(Table.Rows[0]["TotalRecordsSubmittedToday"]);
+                return Ok(new { TotalTestToday = totalTestToday });
+            }
+
+            return Ok(new { TotalRecordsSubmittedToday = 0 });
+        }
+    
+}
+
 }

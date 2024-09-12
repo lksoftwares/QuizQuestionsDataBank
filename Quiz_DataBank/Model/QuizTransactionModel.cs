@@ -12,6 +12,7 @@
         public string? Opt_C { get; set; }
         public string? Opt_D { get; set; }
         public string? User_Email{ get; set; }
+        public int? Allowed_Time { get; set; }
 
 
 

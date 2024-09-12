@@ -85,11 +85,11 @@ namespace Quiz_DataBank.Controllers
            
             if (newUser.User_Password != null)
             {
-                string encryptedPassword = PasswordUtility.EncryptPassword(newUser.User_Password);
-                Console.WriteLine(encryptedPassword);
-                //string hashedPassword = HashedPassword.HashPassword(newUser.User_Password);
-                // newUser.User_Password = hashedPassword;
-                newUser.User_Password = encryptedPassword;
+                //string encryptedPassword = PasswordUtility.EncryptPassword(newUser.User_Password);
+                //Console.WriteLine(encryptedPassword);
+                string hashedPassword = HashedPassword.HashPassword(newUser.User_Password);
+                newUser.User_Password = hashedPassword;
+              //  newUser.User_Password = encryptedPassword;
             }
             newUser.Status = 1;
             newUser.Role_ID = 3;
@@ -201,12 +201,18 @@ namespace Quiz_DataBank.Controllers
                 {
                     User_ID = Convert.ToInt32(userData["User_ID"]),
                     User_Name = userData["User_Name"].ToString(),
+
                   //  userRole = userData["RoleName"].ToString()
                 });
                 ExtractTokenInformation(token);
                 Console.WriteLine($"Here is the token {token}");
-                
-                response = Ok(new { token });
+
+                response = Ok(new { token,
+                    user_id = userData["User_ID"],
+                    Role_ID = userData["Role_ID"]
+
+                }) ;
+
             }
             catch (Exception ex)
             {
@@ -240,6 +246,7 @@ namespace Quiz_DataBank.Controllers
                 string username = usernameClaim.Value;
                 Console.WriteLine($"Username: {username}");
             }
+
         }
         [HttpPut]
         [Route("updateUsers/{User_ID}")]
@@ -266,10 +273,7 @@ namespace Quiz_DataBank.Controllers
 
                     user.User_Password = hashedPassword;
                 }
-                if (String.IsNullOrEmpty(user.User_Email) || String.IsNullOrEmpty(user.User_Name) || String.IsNullOrEmpty(user.User_Password))
-                {
-                    return Ok("Email,Username,Password can't be blank");
-                }
+                
                 _query = _dc.InsertOrUpdateEntity(user, "Users_mst", User_ID, "User_ID");
                 return Ok("Users Updated Successfully");
             }

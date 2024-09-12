@@ -70,8 +70,11 @@ namespace Quiz_DataBank.Controllers
                 {
 
                     var duplicacyChecker = new CheckDuplicacy(_connection);
-
-                    bool isDuplicate = duplicacyChecker.CheckDuplicate("Question_Type_mst",
+                if (String.IsNullOrEmpty(quesType.QuesType_Value))
+                {
+                    return Ok("RoleName Can't be Blank Or Null ");
+                }
+                bool isDuplicate = duplicacyChecker.CheckDuplicate("Question_Type_mst",
                         new[] { "QuesType_Value" },
                         new[] { quesType.QuesType_Value });
 

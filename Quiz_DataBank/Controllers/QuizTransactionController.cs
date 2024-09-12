@@ -47,6 +47,11 @@ namespace Quiz_DataBank.Controllers
                 filter.Add("  U.User_Email = @Email");
                 sqlparams.Add("@Email", Email);
             }
+            if (param.TryGetValue("User_ID", out string User_ID))
+            {
+                filter.Add("  U.User_ID = @User_ID");
+                sqlparams.Add("@User_ID", User_ID);
+            }
             if (filter.Count > 0)
             {
                 query += " WHERE " + string.Join(" AND ", filter);
@@ -90,14 +95,14 @@ namespace Quiz_DataBank.Controllers
             try
             {
 
+              
 
-
-                string insertQuery = "INSERT INTO Quiz_Transaction_mst (Ques_ID, Quiz_Date,User_ID) VALUES ";
+                string insertQuery = "INSERT INTO Quiz_Transaction_mst (Ques_ID, Quiz_Date,User_ID,Allowed_Time) VALUES ";
 
                 List<string> valueRows = new List<string>();
                 foreach (var quiz in quizList)
                 {
-                    valueRows.Add($"('{quiz.Ques_ID}', '{quiz.Quiz_Date}','{quiz.User_ID}')");
+                    valueRows.Add($"('{quiz.Ques_ID}', '{quiz.Quiz_Date}','{quiz.User_ID}',{quiz.Allowed_Time})");
                 }
 
                 insertQuery += string.Join(", ", valueRows);

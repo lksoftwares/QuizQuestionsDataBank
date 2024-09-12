@@ -40,7 +40,7 @@ namespace Quiz_DataBank.Controllers
         public IActionResult GetAllTopics()
         {
             string query = $"select * from Topics_mst";
-            //var connection = new LkDataConnection.Connection();
+            // var connection = new LkDataConnection.Connection();
 
             //var result = connection.bindmethod(query);
 

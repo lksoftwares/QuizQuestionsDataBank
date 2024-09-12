@@ -36,11 +36,11 @@ namespace Quiz_DataBank.Controllers
         public IActionResult GetAllRole()
         {
             string query = $"select * from Roles_mst";
-            var connection = new LkDataConnection.Connection();
+            //var connection = new LkDataConnection.Connection();
 
             //var result = connection.bindmethod(query);
 
-            //DataTable Table = result._DataTable;           
+            //DataTable Table = result._DataTable;
             DataTable Table = _connection.ExecuteQueryWithResult(query);
 
             var RoleList = new List<RolesModel>();
