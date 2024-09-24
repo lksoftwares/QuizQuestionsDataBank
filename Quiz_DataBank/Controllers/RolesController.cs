@@ -35,10 +35,12 @@ namespace Quiz_DataBank.Controllers
         [Route("getallrole")]
         public IActionResult GetAllRole()
         {
-            string query = $"select * from Roles_mst";
+            string query = $"select * from Roles_mst ORDER BY RoleName ASC";
+            Console.WriteLine(query);
             //var connection = new LkDataConnection.Connection();
 
             //var result = connection.bindmethod(query);
+            
 
             //DataTable Table = result._DataTable;
             DataTable Table = _connection.ExecuteQueryWithResult(query);
@@ -125,10 +127,22 @@ namespace Quiz_DataBank.Controllers
         [Route("deleteRole/{id}")]
         public IActionResult DeleteRoleName(int id)
         {
-            string deleteRoleQuery = $"Delete from Roles_mst where Role_ID='{id}'";
-            try
-            {
-                LkDataConnection.Connection.ExecuteNonQuery(deleteRoleQuery);
+          
+                string checkQuery = $"SELECT COUNT(*) AS recordCount FROM Users_mst WHERE Role_ID = {id}";
+
+
+                try
+                {
+
+
+                    int result = Convert.ToInt32(_connection.ExecuteScalar(checkQuery));
+                    if (result > 0)
+                    {
+                        return Ok("Can't delete Exists in another table  ");
+                    }
+                    string deleteRoleQuery = $"Delete from Roles_mst where Role_ID='{id}'";
+
+                    LkDataConnection.Connection.ExecuteNonQuery(deleteRoleQuery);
                // _connection.ExecuteQueryWithoutResult(deleteDepQuery);
                 return Ok("RoleName Deleted successfully");
 

@@ -14,17 +14,26 @@
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "http://localhost:5071",
+      "applicationUrl": "http://localhost:7241;http://192.168.1.56:7241",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
+    //"Production": {
+    //  "commandName": "Project",
+    //  "environmentVariables": {
+    //    "ASPNETCORE_ENVIRONMENT": "Production"
+    //  },
+    //  "applicationUrl": "http://localhost:7241;http://192.168.1.56:7241"
+
+    //}
+  //}
     "https": {
       "commandName": "Project",
       "dotnetRunMessages": true,
       "launchBrowser": true,
       "launchUrl": "swagger",
-      "applicationUrl": "http://localhost:7241;http://192.168.1.54:7241",
+      "applicationUrl": "http://localhost:7241;http://192.168.1.56:7241;",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }

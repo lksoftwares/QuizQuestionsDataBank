@@ -19,6 +19,9 @@
         public int? Topic_ID { get; set; }
         public string? Topic_Name { get; set; }
         public string? Quiz_Date { get; set; }
+        public string? Result { get; set; }
+        public string? Quiz_Name { get; set; }
+
 
     }
 }

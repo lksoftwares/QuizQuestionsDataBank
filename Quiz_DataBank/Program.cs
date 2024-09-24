@@ -3,6 +3,8 @@ using Microsoft.IdentityModel.Tokens;
 using Quiz_DataBank.Classes;
 using System.Text;
 using LkDataConnection;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.FileProviders;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -32,6 +34,12 @@ builder.Services.AddCors(options =>
     });
 });
 
+    Host.CreateDefaultBuilder(args)
+        .ConfigureWebHostDefaults(webBuilder =>
+        {
+            webBuilder.UseStartup<Program>()
+                      .UseKestrel();
+        });
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -41,6 +49,7 @@ builder.Services.AddScoped<Quiz_DataBank.Classes.Connection>();
 
 
 var app = builder.Build();
+app.UseHttpsRedirection();
 
 app.UseCors("ReactConnection");
 
@@ -49,6 +58,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+app.UseHttpsRedirection();
+
 app.Use(async (httpContext, next) =>
 {
     try
@@ -69,7 +80,7 @@ app.Use(async (httpContext, next) =>
         using var memStream = new MemoryStream();
         httpContext.Response.Body = memStream;
 
-      
+
         await next(httpContext);
 
         memStream.Position = 0;
@@ -84,8 +95,13 @@ app.Use(async (httpContext, next) =>
         httpContext.Response.Body = originalBody;
     }
 });
-
-app.UseHttpsRedirection();
+//app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(
+        Path.Combine(Directory.GetCurrentDirectory(), "public")),
+    RequestPath = "/public"
+});
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

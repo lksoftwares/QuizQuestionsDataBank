@@ -5,8 +5,8 @@ namespace Quiz_DataBank.Classes
 {
     public class Connection
     {
-        private readonly string _ConnectionString;
-        private readonly SqlConnection _connection;
+        private  string _ConnectionString;
+        private  SqlConnection _connection;
         public Connection(IConfiguration configuration)
         {
             _ConnectionString = configuration.GetConnectionString("dbcs");
@@ -23,7 +23,14 @@ namespace Quiz_DataBank.Classes
             {
                 if (_connection.State != ConnectionState.Open)
                 {
-                    _connection.Open();
+                    try
+                    {
+                        _connection.Open();
+                    }
+                    catch(Exception ex)
+                    {
+                        
+                    }
                 }
                 using (SqlDataAdapter adapter = new SqlDataAdapter(command))
                 {
@@ -96,5 +103,43 @@ namespace Quiz_DataBank.Classes
 
 
         }
+        public string GetOldImagePathFromDatabase(int User_ID)
+        {
+            string oldImagePath = null;
+
+            try
+            {
+                string query = "SELECT image FROM Users_mst WHERE User_ID = @User_ID";
+                //Console.WriteLine($"_connection{_ConnectionString}");
+                //using (SqlConnection connection = GetSqlConnection())
+                //{
+
+                using (SqlCommand command = new SqlCommand(query, _connection))
+                {
+                    _connection.Open();
+
+                    command.Parameters.AddWithValue("@User_ID", User_ID);
+
+                    using (SqlDataReader reader = command.ExecuteReader())
+                    {
+                        if (reader.Read())
+                        {
+                            oldImagePath = reader["image"].ToString();
+                            Console.WriteLine(oldImagePath);
+                        }
+                    }
+                    _connection.Close();
+                    //}
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error retrieving old image path from database: {ex.Message}");
+
+            }
+
+            return oldImagePath;
+        }
     }
+
 }
