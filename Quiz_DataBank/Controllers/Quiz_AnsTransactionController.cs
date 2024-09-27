@@ -288,7 +288,7 @@ namespace Quiz_DataBank.Controllers
             }
         }
 
-        //================================================TotalQuizAnsTransaction======================
+        //================================================TotalQuizAnsTransaction===============================
         [HttpGet]
         [Route("TotalQuizAnsTransaction")]
         public IActionResult TotalQuizAnsTransaction()
