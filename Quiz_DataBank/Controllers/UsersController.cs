@@ -19,15 +19,18 @@ namespace Quiz_DataBank.Controllers
 
     public class UsersController : ControllerBase
     {
+        private readonly IWebHostEnvironment _hostingEnvironment;
+
         private readonly IConfiguration _config;
 
         private readonly Quiz_DataBank.Classes.Connection _connection;
         private LkDataConnection.DataAccess _dc;
         private LkDataConnection.SqlQueryResult _query;
-        public UsersController(IConfiguration configuration, Quiz_DataBank.Classes.Connection connection)
+        public UsersController(IConfiguration configuration, Quiz_DataBank.Classes.Connection connection, IWebHostEnvironment hostingEnvironment)
         {
             _config = configuration;
             _connection = connection;
+            _hostingEnvironment = hostingEnvironment;
             DataAccessMethod();
         }
 
@@ -52,6 +55,11 @@ namespace Quiz_DataBank.Controllers
             {
                 filter.Add("  U.User_ID = @User_ID");
                 sqlparams.Add("@User_ID", User_ID);
+            }
+            if (param.TryGetValue("Role_ID", out string Role_ID))
+            {
+                filter.Add("  U.Role_ID = @Role_ID");
+                sqlparams.Add("@Role_ID", Role_ID);
             }
 
             if (filter.Count > 0)
@@ -117,6 +125,62 @@ namespace Quiz_DataBank.Controllers
 
 
         }
+
+
+        [HttpGet]
+        [Route("GetAllParticipent")]
+
+        public IActionResult GetAllParticipent([FromQuery] IDictionary<string, string> param)
+        {
+            //var query = $"  select Q.*,DISTINCT(U.User_Name) from [Quiz_Transaction_mst] Q  join Users_mst U ON  Q.User_ID=U.User_ID";
+            var query = $"SELECT U.USer_Name,U.User_ID, MIN(Q.Quiz_Date) AS Quiz_Date FROM [Quiz_Transaction_mst] Q JOIN [Users_mst] U ON Q.User_ID = U.User_ID";
+
+            List<string> filter = new List<string>();
+            Dictionary<string, object> sqlparams = new Dictionary<string, object>();
+            if (param.TryGetValue("quizDate", out string QuizDate) && DateTime.TryParse(QuizDate, out DateTime quizDate))
+            {
+                filter.Add("Q.Quiz_Date = @quizDate");
+                sqlparams.Add("@quizDate", quizDate);
+            }
+            if (filter.Count > 0)
+            {
+                query += " WHERE " + string.Join(" AND ", filter);
+            }
+            query += " GROUP BY U.User_Name,U.User_ID";
+
+            DataTable UserTable = _connection.ExecuteQueryWithResults(query, sqlparams);
+            var UsersList = new List<UsersModel>();
+           
+
+            foreach (DataRow row in UserTable.Rows)
+            {
+            
+
+                UsersList.Add(new UsersModel
+                {
+
+
+                    User_Name = row["User_Name"].ToString(),
+                    User_ID = Convert.ToInt32(row["User_ID"]),
+
+
+
+
+                }); ;
+
+
+
+            }
+          
+
+            return Ok(new
+            { UsersList
+               
+            });
+
+
+        }
+
         [HttpGet]
         [Route("participation")]
         public IActionResult GetCardsApi()
@@ -125,7 +189,7 @@ namespace Quiz_DataBank.Controllers
             {
 
 
-                string participatedQuery = $" select Count(DISTINCT [User_ID]) as Participation from [Quiz_AnsTransaction_mst]";
+                string participatedQuery = $" select Count(DISTINCT [User_ID]) as Participation from [Quiz_AnsTransaction_mst]  ";
 
                 DataTable result = _connection.ExecuteQueryWithResult(participatedQuery);
                 int participation = 0;
@@ -147,29 +211,7 @@ namespace Quiz_DataBank.Controllers
             }
         }
 
-        //[HttpGet]
-        //[Route("participation")]
-        //public IActionResult GetCardsApi()
-        //{
-        //    try
-        //    {
-        //        string AllTestquery = $"select * from Quiz_Transaction_mst ";
-        //        DataTable table  = _connection.ExecuteQueryWithResult(AllTestquery);
-
-
-        //        string participatedQuery = $"select * from  Quiz_AnsTransaction_mst";
-        //        DataTable Participatedtable = _connection.ExecuteQueryWithResult(participatedQuery);
-
-
-
-
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        return StatusCode(StatusCodes.Status500InternalServerError, $"Error:{ex.Message}");
-        //    }
-
-        //}
+        
 
         [AllowAnonymous]
         [HttpPost]
@@ -198,15 +240,18 @@ namespace Quiz_DataBank.Controllers
 
                 if (isDuplicate)
                 {
-                    return Ok("Duplicate ! Users exists.");
+                    return StatusCode(StatusCodes.Status208AlreadyReported, new { message = "Duplicate ! Users exists.", DUP = true });
                 }
                 if (String.IsNullOrEmpty(newUser.User_Email) || String.IsNullOrEmpty(newUser.User_Name) || String.IsNullOrEmpty(newUser.User_Password))
                 {
-                    return Ok("User Email ,Name,Password");
+                    return StatusCode(StatusCodes.Status208AlreadyReported, new { message = "User Email ,Name,Password can't be blank ", DUP = true });
+
                 }
                 _query = _dc.InsertOrUpdateEntity(newUser, "Users_mst", -1);
+                return StatusCode(StatusCodes.Status200OK, new { message = "USer Register successfully", DUP = false });
 
-                return Ok("USer Register successfully");
+
+           //     return Ok("USer Register successfully");
 
             }
             catch (Exception ex)
@@ -228,6 +273,9 @@ namespace Quiz_DataBank.Controllers
                 _config["Jwt:Audience"],
                 new List<Claim>
                 {
+              new Claim("Role_ID", users.Role_ID.ToString()),
+
+
             new Claim(ClaimTypes.NameIdentifier, users.User_ID.ToString()),
             new Claim(ClaimTypes.Name, users.User_Name),
             new Claim("iat", new DateTimeOffset(localIssuedAt).ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer)
@@ -296,6 +344,7 @@ namespace Quiz_DataBank.Controllers
                 {
                     User_ID = Convert.ToInt32(userData["User_ID"]),
                     User_Name = userData["User_Name"].ToString(),
+                    Role_ID = Convert.ToInt32(userData["Role_ID"]),
 
                     //  userRole = userData["RoleName"].ToString()
                 });
@@ -329,7 +378,12 @@ namespace Quiz_DataBank.Controllers
 
             DateTime issuedAt = DateTimeOffset.FromUnixTimeSeconds(jsonToken.Payload.Iat ?? 0).LocalDateTime;
             Console.WriteLine($"Token Issued At: {issuedAt}");
-
+            var roleClaim = jsonToken.Claims.FirstOrDefault(c => c.Type == "Role_ID");
+            if (roleClaim != null)
+            {
+                string roleId = roleClaim.Value;
+                Console.WriteLine($"Role ID: {roleId}");
+            }
             var userIdClaim = jsonToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
             if (userIdClaim != null)
             {
@@ -351,12 +405,14 @@ namespace Quiz_DataBank.Controllers
         {
             try
             {
+                string wwwRootPath = _hostingEnvironment.WebRootPath;
+
                 string oldImagePath = _connection.GetOldImagePathFromDatabase(User_ID);
 
                 if (!string.IsNullOrEmpty(oldImagePath))
                 {
-                    string imagePath = Path.Combine("Public/Images", oldImagePath);
-                    DataAccess.DeleteImage("Public/Images", oldImagePath);
+                    string imagePath = Path.Combine(wwwRootPath, "Public/Images", oldImagePath);
+                  //  DataAccess.DeleteImage("/Public/Images", oldImagePath);
                 }
                 var duplicacyChecker = new CheckDuplicacy(_connection);
 
@@ -367,7 +423,8 @@ namespace Quiz_DataBank.Controllers
 
                 if (isDuplicate)
                 {
-                    return Ok("Duplicate ! Users exists.");
+                    return StatusCode(StatusCodes.Status208AlreadyReported, new { message = "Duplicate ! Users exists.", DUP = true });
+
                 }
                 if (user.User_Password != null)
                 {
@@ -377,8 +434,9 @@ namespace Quiz_DataBank.Controllers
                     user.User_Password = hashedPassword;
                 }
 
-                _query = _dc.InsertOrUpdateEntity(user, "Users_mst", User_ID, "User_ID");
-                return Ok("Users Updated Successfully");
+                _query = _dc.InsertOrUpdateEntity(user, "Users_mst", User_ID, "User_ID", "wwwroot/Public/Images");
+                return StatusCode(StatusCodes.Status200OK, new { message = "Users Updated Successfully", DUP = false });
+
             }
             catch (Exception ex)
             {
@@ -455,7 +513,7 @@ namespace Quiz_DataBank.Controllers
         u.User_Name,
         COUNT(qat.Ques_ID) AS TotalQuestions,
         COUNT(CASE WHEN qat.Answer = q.Correct_Answer THEN 1 END) AS CorrectAnswersCount,
-        (CAST(COUNT(CASE WHEN qat.Answer = q.Correct_Answer THEN 1 END) AS FLOAT) / COUNT(qat.Ques_ID)) * 100 AS AverageCorrectAnswers
+        (ROUND(CAST(COUNT(CASE WHEN qat.Answer = q.Correct_Answer THEN 1 END) AS Float ),1 )/ COUNT(qat.Ques_ID)) * 100 AS AverageCorrectAnswers
     FROM 
         Quiz_AnsTransaction_mst qat
     INNER JOIN 
@@ -497,7 +555,7 @@ namespace Quiz_DataBank.Controllers
 
                 if (!string.IsNullOrEmpty(imageName))
                 {
-                    var imageUrl = $"http://192.168.1.56:7241/public/images/{imageName}";
+                    var imageUrl = $"http://192.168.1.60:7241/public/images/{imageName}";
 
                     return Ok(new { ImageUrl = imageUrl });
                 }
@@ -511,94 +569,96 @@ namespace Quiz_DataBank.Controllers
                 return NotFound(new { Message = "User not found." });
             }
         }
-
-
         [HttpGet]
-        [Route("GetBestQuizes/{User_ID}")]
-        public IActionResult GetBestQuizes(int User_ID)
+        [Route("GetBestAndWorstQuizes/{User_ID}")]
+        public IActionResult GetBestAndWorstQuizes(int User_ID)
         {
-            string query = $@"
-  SELECT TOP 3 
-    qt.Quiz_Name,
-    qt.Quiz_Date,
-    COUNT(qat.Ques_ID) AS TotalQuestions,
-    SUM(CASE WHEN qat.Answer = q.Correct_Answer THEN 1 ELSE 0 END) AS CorrectAnswersCount,
-    (CAST(SUM(CASE WHEN qat.Answer = q.Correct_Answer THEN 1 ELSE 0 END) AS FLOAT) / COUNT(qat.Ques_ID)) * 100 AS ScorePercentage
-FROM 
-    Quiz_AnsTransaction_mst qat
-INNER JOIN 
-    Questions_mst q ON qat.Ques_ID = q.Ques_ID
-INNER JOIN 
-    Quiz_Transaction_mst qt ON qat.Ques_ID = qt.Ques_ID AND qat.User_ID = qt.User_ID
-WHERE 
-    qat.User_ID = {User_ID}
-GROUP BY 
-    qt.Quiz_Name, qt.Quiz_Date
-ORDER BY 
-    ScorePercentage DESC;
+            string bestQuizzesQuery = $@"
+    SELECT TOP 3 
+     qt.Quiz_Name,
+     qt.Quiz_Date,
+     COUNT(qat.Ques_ID) AS TotalQuestions,
+     SUM(CASE WHEN qat.Answer = q.Correct_Answer THEN 1 ELSE 0 END) AS CorrectAnswersCount,
+     (CAST(SUM(CASE WHEN qat.Answer = q.Correct_Answer THEN 1 ELSE 0 END) AS FLOAT) / COUNT(qat.Ques_ID)) * 100 AS ScorePercentage
+ FROM 
+     Quiz_AnsTransaction_mst qat
+ INNER JOIN 
+     Questions_mst q ON qat.Ques_ID = q.Ques_ID
+ INNER JOIN 
+     Quiz_Transaction_mst qt ON qat.Ques_ID = qt.Ques_ID AND qat.User_ID = qt.User_ID
+ WHERE 
+     qat.User_ID = {User_ID} AND qat.Answer_ID IS NOT NULL 
+  AND qat.Answer_Date IS NOT NULL
+  AND qt.Quiz_Name = qat.Quiz_Name  
+  AND qat.User_ID = qt.User_ID     
+  AND qat.Ques_ID = qt.Ques_ID  
+ GROUP BY 
+     qt.Quiz_Name, qt.Quiz_Date
+ ORDER BY 
+     ScorePercentage DESC;
+    ";
 
-"; 
+            string worstQuizzesQuery = $@"
+    SELECT TOP 3 
+     qt.Quiz_Name,
+     qt.Quiz_Date,
+     COUNT(qat.Ques_ID) AS TotalQuestions,
+     SUM(CASE WHEN qat.Answer = q.Correct_Answer THEN 1 ELSE 0 END) AS CorrectAnswersCount,
+     (CAST(SUM(CASE WHEN qat.Answer = q.Correct_Answer THEN 1 ELSE 0 END) AS FLOAT) / COUNT(qat.Ques_ID)) * 100 AS ScorePercentage
+ FROM 
+     Quiz_AnsTransaction_mst qat
+ INNER JOIN 
+     Questions_mst q ON qat.Ques_ID = q.Ques_ID
+ INNER JOIN 
+     Quiz_Transaction_mst qt ON qat.Ques_ID = qt.Ques_ID AND qat.User_ID = qt.User_ID
+ WHERE 
+     qat.User_ID = {User_ID} AND qat.Answer_ID IS NOT NULL 
+  AND qat.Answer_Date IS NOT NULL
+  AND qt.Quiz_Name = qat.Quiz_Name  
+  AND qat.User_ID = qt.User_ID     
+  AND qat.Ques_ID = qt.Ques_ID  
+ GROUP BY 
+     qt.Quiz_Name, qt.Quiz_Date
+ ORDER BY 
+     ScorePercentage ASC;
+    ";
+
+            DataTable bestTable = _connection.ExecuteQueryWithResult(bestQuizzesQuery);
+            DataTable worstTable = _connection.ExecuteQueryWithResult(worstQuizzesQuery);
 
             
-         
-            DataTable table = _connection.ExecuteQueryWithResult(query);
-
-            var quizResults = new List<QuizTransactionModel>();
-            foreach (DataRow row in table.Rows)
+            var bestQuizResults = new List<QuizTransactionModel>();
+            foreach (DataRow row in bestTable.Rows)
             {
-                quizResults.Add(new QuizTransactionModel
+                bestQuizResults.Add(new QuizTransactionModel
                 {
-                    Quiz_Date =row["Quiz_Date"].ToString(),
+                    Quiz_Date = Convert.ToDateTime(row["Quiz_Date"]),
                     Total_Questions = Convert.ToInt32(row["TotalQuestions"]),
                     CorrectAnswers = Convert.ToInt32(row["CorrectAnswersCount"]),
                     Score_Percentage = Convert.ToDouble(row["ScorePercentage"])
                 });
             }
 
-            return Ok(quizResults);
-        }
-        [HttpGet]
-        [Route("GetWorstQuizes/{User_ID}")]
-        public IActionResult GetWorstQuizes(int User_ID)
-        {
-            string query = $@"
- SELECT TOP 3 
-    qt.Quiz_Name,
-    qt.Quiz_Date,
-    COUNT(qat.Ques_ID) AS TotalQuestions,
-    SUM(CASE WHEN qat.Answer = q.Correct_Answer THEN 1 ELSE 0 END) AS CorrectAnswersCount,
-    (CAST(SUM(CASE WHEN qat.Answer = q.Correct_Answer THEN 1 ELSE 0 END) AS FLOAT) / COUNT(qat.Ques_ID)) * 100 AS ScorePercentage
-FROM 
-    Quiz_AnsTransaction_mst qat
-INNER JOIN 
-    Questions_mst q ON qat.Ques_ID = q.Ques_ID
-INNER JOIN 
-    Quiz_Transaction_mst qt ON qat.Ques_ID = qt.Ques_ID AND qat.User_ID = qt.User_ID
-WHERE 
-    qat.User_ID = {User_ID}
-GROUP BY 
-    qt.Quiz_Name, qt.Quiz_Date
-ORDER BY 
-    ScorePercentage ASC;
-
-";
-
-            DataTable table = _connection.ExecuteQueryWithResult(query);
-
-            var quizResults = new List<QuizTransactionModel>();
-            foreach (DataRow row in table.Rows)
+            var worstQuizResults = new List<QuizTransactionModel>();
+            foreach (DataRow row in worstTable.Rows)
             {
-                quizResults.Add(new QuizTransactionModel
+                worstQuizResults.Add(new QuizTransactionModel
                 {
-                    Quiz_Date = row["Quiz_Date"].ToString(),
+                    Quiz_Date = Convert.ToDateTime(row["Quiz_Date"]),
                     Total_Questions = Convert.ToInt32(row["TotalQuestions"]),
                     CorrectAnswers = Convert.ToInt32(row["CorrectAnswersCount"]),
                     Score_Percentage = Convert.ToDouble(row["ScorePercentage"])
                 });
             }
 
-            return Ok(quizResults);
+            return Ok(new
+            {
+                BestQuizes = bestQuizResults,
+                WorstQuizes = worstQuizResults
+            });
         }
+
+
 
     }
 }

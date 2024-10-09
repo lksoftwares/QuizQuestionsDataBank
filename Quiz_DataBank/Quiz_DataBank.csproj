@@ -9,6 +9,7 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.10" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.1" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
   </ItemGroup>
@@ -20,7 +21,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Public\images\" />
+    <None Include="wwwroot\Public\images\0d5ef12c-7256-4cc3-b7eb-981e6765de28.jpeg" />
+    <None Include="wwwroot\Public\images\14c216ed-8929-4028-a66d-4259696e9838.png" />
+    <None Include="wwwroot\Public\images\84680364-a4cc-44af-8141-56d6e38e509e.png" />
+    <None Include="wwwroot\Public\images\cc8290d1-ed27-4b58-b30b-1f312141df85.jpeg" />
+    <None Include="wwwroot\Public\images\e447113b-0588-4be2-b073-1683c180523f.jpeg" />
+    <None Include="wwwroot\Public\images\e9c355ac-90a5-48bb-9240-6a358f7aa244.jpeg" />
+    <None Include="wwwroot\Public\images\f903a142-a14c-46e1-b1aa-0e9520f7264d.png" />
   </ItemGroup>
 
 </Project>

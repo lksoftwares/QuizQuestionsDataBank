@@ -34,9 +34,12 @@ namespace Quiz_DataBank.Controllers
         }
 
         //-----------------------AllTopics---------------------------------
-     
+
         [HttpGet]
+
         [Route("AllTopic")]
+  //[RoleAuthorize("Admin")]
+
         public IActionResult GetAllTopics()
         {
             string query = $"select * from Topics_mst";
@@ -78,17 +81,19 @@ namespace Quiz_DataBank.Controllers
 
                 if (isDuplicate)
                 {
-                    return Ok("Topics already exists.");
+                    return StatusCode(StatusCodes.Status208AlreadyReported, new { message = "Topics already exists.", DUP = true });
+
                 }
                 if (String.IsNullOrEmpty(topic.Topic_Name))
                 {
-                    return Ok("Topic Name Can't be Blank Or Null ");
+                    return StatusCode(StatusCodes.Status200OK, new { message = "Topic Name Can't be Blank Or Null ", DUP = true });
+
                 }
                 _query = _dc.InsertOrUpdateEntity(topic, "Topics_mst", -1);
 
 
+                return StatusCode(StatusCodes.Status200OK, new { message = "Topics Added Successfully", DUP = false });
 
-                return Ok("Topics Added Successfully");
             }
             catch (Exception ex)
             {
@@ -116,14 +121,17 @@ namespace Quiz_DataBank.Controllers
 
                 if (isDuplicate)
                 {
-                    return Ok("Duplicate ! Topic exists.");
+                    return StatusCode(StatusCodes.Status208AlreadyReported, new { message = "Duplicate ! Topic exists.", DUP = true });
+
                 }
                 if (String.IsNullOrEmpty(topic.Topic_Name))
                 {
-                    return Ok("Topic Name Can't be Blank Or Null ");
+                    return StatusCode(StatusCodes.Status200OK, new { message = "Topic Name Can't be Blank Or Null ", DUP = true });
+
                 }
                 _query = _dc.InsertOrUpdateEntity(topic, "Topics_mst", Topic_ID, "Topic_ID");
-                return Ok("Topic Updated Successfully");
+                return StatusCode(StatusCodes.Status200OK, new { message = "Topic Updated Successfully", DUP = false });
+
             }
             catch (Exception ex)
             {

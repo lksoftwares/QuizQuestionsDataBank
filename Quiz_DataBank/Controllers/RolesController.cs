@@ -25,14 +25,25 @@ namespace Quiz_DataBank.Controllers
 
         private void DataAccessMethod()
         {
-            LkDataConnection.Connection.ConnectionStr = _connection.GetSqlConnection().ConnectionString;
-            LkDataConnection.Connection.Connect();
-            _dc = new LkDataConnection.DataAccess();
-            _query = new LkDataConnection.SqlQueryResult();
+            try
+            {
+                LkDataConnection.Connection.ConnectionStr = _connection.GetSqlConnection().ConnectionString;
+                LkDataConnection.Connection.Connect();
+                _dc = new LkDataConnection.DataAccess();
+                _query = new LkDataConnection.SqlQueryResult();
+            }
+            catch(Exception ex)
+            {
+                
+            }
+          
         }
-        [AllowAnonymous]
+       [AllowAnonymous]
+
         [HttpGet]
+
         [Route("getallrole")]
+
         public IActionResult GetAllRole()
         {
             string query = $"select * from Roles_mst ORDER BY RoleName ASC";
@@ -58,7 +69,11 @@ namespace Quiz_DataBank.Controllers
             return Ok(RoleList);
         }
         [HttpPost]
+
         [Route("AddRole")]
+        [RoleAuthorize("Admin", "User","user1")]
+
+
         public IActionResult AddRole([FromBody] RolesModel role)
         {
             try
@@ -67,24 +82,27 @@ namespace Quiz_DataBank.Controllers
 
                 var duplicacyChecker = new CheckDuplicacy(_connection);
 
+
                 bool isDuplicate = duplicacyChecker.CheckDuplicate("Roles_mst",
                     new[] { "RoleName" },
                     new[] { role.RoleName });
 
                 if (isDuplicate)
                 {
-                    return Ok("RoleName already exists.");
+                    return StatusCode(StatusCodes.Status208AlreadyReported, new { message = "RoleName already exists.", DUP = true });
+
                 }
                 if (String.IsNullOrEmpty(role.RoleName))
                 {
-                    return Ok("RoleName Can't be Blank Or Null ");
+                    return StatusCode(StatusCodes.Status200OK, new { message = "RoleName Can't be Blank Or Null", DUP = false });
+
                 }
                 _query = _dc.InsertOrUpdateEntity(role, "Roles_mst", -1);
 
 
+                return StatusCode(StatusCodes.Status200OK, new { message = "RoleName Added Successfully", DUP = false });
 
 
-                return Ok("RoleName Added Successfully");
             }
             catch (Exception ex)
             {
@@ -92,7 +110,7 @@ namespace Quiz_DataBank.Controllers
             }
         }
 
-
+        [RoleAuthorize("Admin", "User")]
         [HttpPut]
         [Route("updateRole/{Role_ID}")]
         public IActionResult UpdateRole(int Role_ID, [FromBody] RolesModel role)
@@ -108,14 +126,16 @@ namespace Quiz_DataBank.Controllers
 
                 if (isDuplicate)
                 {
-                    return Ok("Duplicate RoleName exists.");
+                    return StatusCode(StatusCodes.Status208AlreadyReported, new { message = "RoleName already exists.", DUP = true });
+
                 }
                 if (String.IsNullOrEmpty(role.RoleName) )
                 {
-                    return Ok("RoleName Can't be Blank Or Null ");
+                    return StatusCode(StatusCodes.Status200OK, new { message = "RoleName Can't be Blank Or Null", DUP = true });
                 }
                 _query = _dc.InsertOrUpdateEntity(role, "Roles_mst", Role_ID, "Role_ID");
-                return Ok("RoleName Updated Successfully");
+                return StatusCode(StatusCodes.Status200OK, new { message = "RoleName Updated Successfully", DUP = false });
+
             }
             catch (Exception ex)
             {

@@ -9,7 +9,9 @@ namespace Quiz_DataBank.Classes
         private  SqlConnection _connection;
         public Connection(IConfiguration configuration)
         {
-            _ConnectionString = configuration.GetConnectionString("dbcs");
+            string _ConnectionString = configuration.GetConnectionString("dbcs");
+            //_ConnectionString = EncryptionHelper.Decrypt(encryptedConnectionString);
+
             _connection = new SqlConnection(_ConnectionString);
 
         }
@@ -91,7 +93,7 @@ namespace Quiz_DataBank.Classes
                 }
 
 
-                // Add parameters
+      
                 foreach (var parameter in parameters)
                 {
                     com.Parameters.AddWithValue("@" + parameter.Key, parameter.Value);

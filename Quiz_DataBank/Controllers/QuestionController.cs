@@ -114,21 +114,23 @@ namespace Quiz_DataBank.Controllers
 
                 if (isDuplicate)
                 {
-                    return Ok("Question already exists.");
+                    return StatusCode(StatusCodes.Status208AlreadyReported, new { message = "Question already exists.", DUP = true });
+
                 }
                 if (String.IsNullOrEmpty(ques.Ques_Desc) || String.IsNullOrEmpty(ques.Correct_Answer) || String.IsNullOrEmpty(ques.Topic_ID.ToString()))
                 {
-                    return Ok("Question description And Correct Answer and Related Topic Name Can' be Blank Or Null ");
+                    return StatusCode(StatusCodes.Status200OK, new { message = "Question description And Correct Answer and Related Topic Name Can' be Blank Or Null ", DUP = true });
+
                 }
                
 
 
                 _query = _dc.InsertOrUpdateEntity(ques, "Questions_mst", -1);
-                
 
 
+                return StatusCode(StatusCodes.Status200OK, new { message = "Question Added Successfully ", DUP = false });
 
-                return Ok("Question Added Successfully");
+
             }
             catch (Exception ex)
             {
@@ -155,11 +157,13 @@ namespace Quiz_DataBank.Controllers
 
                 if (isDuplicate)
                 {
-                    return Ok("Duplicate ! Question exists.");
+                    return StatusCode(StatusCodes.Status208AlreadyReported, new { message = "Question already exists.", DUP = true });
+
                 }
-               
+
                 _query = _dc.InsertOrUpdateEntity(ques, "Questions_mst", Ques_ID, "Ques_ID");
-                return Ok("Question Updated Successfully");
+                return StatusCode(StatusCodes.Status200OK, new { message = "Question Updated Successfully", DUP = false });
+
             }
             catch (Exception ex)
             {
