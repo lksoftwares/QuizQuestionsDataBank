@@ -472,7 +472,7 @@ namespace Quiz_DataBank.Controllers
                 }
                 else
                 {
-                    return Ok("Invalid Quiz_Date format. Please provide a valid   date.");
+                    return Ok("Invalid Quiz_Date format. Please provide a valid date.");
                 }
             }
 
