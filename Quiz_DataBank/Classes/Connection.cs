@@ -9,8 +9,8 @@ namespace Quiz_DataBank.Classes
         private  SqlConnection _connection;
         public Connection(IConfiguration configuration)
         {
-            string _ConnectionString = configuration.GetConnectionString("dbcs");
-            //_ConnectionString = EncryptionHelper.Decrypt(encryptedConnectionString);
+            string encryptedConnectionString = configuration.GetConnectionString("dbcs");
+            _ConnectionString = EncryptionHelper.Decrypt(encryptedConnectionString);
 
             _connection = new SqlConnection(_ConnectionString);
 

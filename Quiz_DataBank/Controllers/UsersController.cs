@@ -56,7 +56,7 @@ namespace Quiz_DataBank.Controllers
                 filter.Add("  U.User_ID = @User_ID");
                 sqlparams.Add("@User_ID", User_ID);
             }
-            if (param.TryGetValue("Role_ID", out string Role_ID))
+            if (param.TryGetValue("Role_ID", out string Role_ID)) 
             {
                 filter.Add("  U.Role_ID = @Role_ID");
                 sqlparams.Add("@Role_ID", Role_ID);
@@ -85,7 +85,8 @@ namespace Quiz_DataBank.Controllers
                     User_Name = row["User_Name"].ToString(),
                     User_Email = row["User_Email"].ToString(),
                     // User_Password = realPassword,
-                    User_Password = row["User_Password"].ToString(),
+                    User_Password=  HashedPassword.DecryptPassword(row["User_Password"].ToString()),
+                   // User_Password = row["User_Password"].ToString(),
 
                     userRole = row["RoleName"].ToString(),
 
@@ -223,7 +224,9 @@ namespace Quiz_DataBank.Controllers
             {
                 //string encryptedPassword = PasswordUtility.EncryptPassword(newUser.User_Password);
                 //Console.WriteLine(encryptedPassword);
-                string hashedPassword = HashedPassword.HashPassword(newUser.User_Password);
+                string hashedPassword = HashedPassword.EncryptPassword(newUser.User_Password);
+
+               // string hashedPassword = HashedPassword.HashPassword(newUser.User_Password);
                 newUser.User_Password = hashedPassword;
                 //  newUser.User_Password = encryptedPassword;
             }
@@ -244,11 +247,11 @@ namespace Quiz_DataBank.Controllers
                 }
                 if (String.IsNullOrEmpty(newUser.User_Email) || String.IsNullOrEmpty(newUser.User_Name) || String.IsNullOrEmpty(newUser.User_Password))
                 {
-                    return StatusCode(StatusCodes.Status208AlreadyReported, new { message = "User Email ,Name,Password can't be blank ", DUP = true });
+                    return StatusCode(StatusCodes.Status208AlreadyReported, new { message = "User Email ,Name,Password can't be blank " });
 
                 }
                 _query = _dc.InsertOrUpdateEntity(newUser, "Users_mst", -1);
-                return StatusCode(StatusCodes.Status200OK, new { message = "USer Register successfully", DUP = false });
+                return StatusCode(StatusCodes.Status200OK, new { message = "USer Register successfully"});
 
 
            //     return Ok("USer Register successfully");
@@ -260,6 +263,7 @@ namespace Quiz_DataBank.Controllers
             }
 
         }
+
         private string GenerateToken(LoginModel users)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
@@ -297,7 +301,9 @@ namespace Quiz_DataBank.Controllers
             IActionResult response = Unauthorized();
             try
             {
-                string hashedPassword = HashedPassword.HashPassword(user.User_Password);
+                // string hashedPassword = HashedPassword.HashPassword(user.User_Password);
+                string hashedPassword = HashedPassword.EncryptPassword(user.User_Password);
+
                 //string hashedPassword = PasswordUtility.EncryptPassword(user.User_Password);
                 // string realp = PasswordUtility.DecryptPassword(hashedPassword);
 
@@ -428,7 +434,7 @@ namespace Quiz_DataBank.Controllers
                 }
                 if (user.User_Password != null)
                 {
-                    string hashedPassword = HashedPassword.HashPassword(user.User_Password);
+                    string hashedPassword = HashedPassword.EncryptPassword(user.User_Password);
                     //string hashedPassword = PasswordUtility.EncryptPassword(user.User_Password);
 
                     user.User_Password = hashedPassword;

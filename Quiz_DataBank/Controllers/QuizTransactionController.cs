@@ -293,7 +293,7 @@ namespace Quiz_DataBank.Controllers
         {
             if (quizList == null || quizList.Count == 0)
             {
-                return Ok("No transaction.");
+                return Ok("No transaction Plese select Question , Allowed Time And Users !!!");
             }
 
             try
@@ -315,9 +315,9 @@ namespace Quiz_DataBank.Controllers
 
                 //    return Ok("Quiz_Transaction_mst Submitted Successfully");
                 //}
+           
 
-                var duplicates = new List<string>();
-
+               
                 foreach (var quiz in quizList)
                 {
                     if (quiz.Quiz_Name.IsNullOrEmpty())
@@ -336,6 +336,7 @@ namespace Quiz_DataBank.Controllers
                     {
                         return Ok("Please Select a User  for quiz: " + quiz.Quiz_Name);
                     }
+                    //var duplicates = new List<string>();
                     string duplicateQueryCheck = $@"SELECT COUNT(*) FROM Quiz_Transaction_mst 
                                              WHERE User_ID = {quiz.User_ID} 
                                              AND Ques_ID = {quiz.Ques_ID}
@@ -365,6 +366,23 @@ namespace Quiz_DataBank.Controllers
 
                 foreach (var quiz in quizList)
                 {
+                    if (quiz.Quiz_Name.IsNullOrEmpty())
+                    {
+                        return Ok("Please Provide A QuizName");
+                    }
+                    if (quiz.Allowed_Time.ToString().IsNullOrEmpty())
+                    {
+                        return Ok("Plese Provide Allowed_Time");
+                    }
+
+                    if (!quiz.Quiz_Date.HasValue)
+                    {
+                        return Ok("Quiz_Date is required for quiz: " + quiz.Quiz_Name);
+                    }
+                    if (quiz.User_ID == null)
+                    {
+                        return Ok("Please Select a User  for quiz: " + quiz.Quiz_Name);
+                    }
                     DateTime quizDate = quiz.Quiz_Date.Value;
                     quizDate = new DateTime(quizDate.Year, quizDate.Month, quizDate.Day, quizDate.Hour, quizDate.Minute, 0);
                     valueRowsWithoutDuplicates.Add($"('{quiz.Ques_ID}', '{quizDate}', '{quiz.User_ID}', {quiz.Allowed_Time}, '{quiz.Quiz_Name}')");
@@ -765,24 +783,45 @@ FROM
         //    }
         //}
 
-
         [HttpDelete]
         [Route("deleteQuizTransaction/{id}")]
         public IActionResult deleteQuizTransaction(int id)
         {
             try
             {
-                string checkQuery = $"SELECT Quiz_Date FROM Quiz_Transaction_mst WHERE Quiz_ID = {id}";
-                var quizDate = (DateTime)_connection.ExecuteScalar(checkQuery);
+                string quizDataQuery = $"SELECT Quiz_Date, Ques_ID, User_ID,Quiz_Name FROM Quiz_Transaction_mst WHERE Quiz_ID = {id}";
+                var dataTable = _connection.ExecuteQueryWithResult(quizDataQuery);
+                _connection.GetSqlConnection().Close();
 
-                DateTime currentDateTime = DateTime.UtcNow;
-
-                if (currentDateTime > quizDate)
+                if (dataTable == null)
                 {
-                    return Ok("Cannot delete the quiz because it has expired.");
+                    return NotFound("Quiz not found.");
+                }
+                var row = dataTable.Rows[0];
+
+                DateTime quizDate = Convert.ToDateTime(row["Quiz_Date"]);
+                int quesId = Convert.ToInt32(row["Ques_ID"]);
+                int userId = Convert.ToInt32(row["User_ID"]);
+                string Quiz_Name = row["Quiz_Name"].ToString();
+
+                //DateTime quizDate = Data.Quiz_Date;
+                //    int quesId = Data.Ques_ID;
+                //    int userId = Data.User_ID;
+
+
+
+                string answerCheckQuery = $"SELECT COUNT(*) FROM Quiz_AnsTransaction_mst WHERE Ques_ID = {quesId} AND User_ID = {userId} AND Quiz_Name='{Quiz_Name}'";
+                var answerCount = (int)_connection.ExecuteScalar(answerCheckQuery);
+
+                _connection.GetSqlConnection().Close();
+
+                if (answerCount > 0)
+                {
+                    return Ok("Cannot delete the quiz because answers have already been submitted.");
                 }
 
-                string deleteQuery = $"DELETE FROM Quiz_Transaction_mst WHERE Quiz_ID ={id}";
+
+                string deleteQuery = $"DELETE FROM Quiz_Transaction_mst WHERE Quiz_ID = {id}";
                 LkDataConnection.Connection.ExecuteNonQuery(deleteQuery);
 
                 return Ok("Quiz_Transaction deleted successfully.");
@@ -792,6 +831,43 @@ FROM
                 return StatusCode(StatusCodes.Status500InternalServerError, $"Error: {ex.Message}");
             }
         }
+
+        //[HttpDelete]
+        //[Route("deleteQuizTransaction/{id}")]
+        //public IActionResult deleteQuizTransaction(int id)
+        //{
+        //    try
+        //    {
+        //        string checkQuery = $"SELECT Quiz_Date FROM Quiz_Transaction_mst WHERE Quiz_ID = {id}";
+        //        var quizDate = (DateTime)_connection.ExecuteScalar(checkQuery);
+        //        string answerCheckQuery = $"SELECT COUNT(*) FROM Quiz_AnsTransaction_mst WHERE  "
+
+
+        //        var answerCount = (int)_connection.ExecuteScalar(answerCheckQuery);
+        //        _connection.GetSqlConnection().Close();
+
+        //        if (answerCount > 0)
+        //        {
+        //            return Ok("Cannot delete the quiz because answers have already been submitted.");
+        //        }
+
+        //        DateTime currentDateTime = DateTime.UtcNow;
+
+        //        if (currentDateTime > quizDate)
+        //        {
+        //            return Ok("Cannot delete the quiz because it has expired.");
+        //        }
+
+        //        string deleteQuery = $"DELETE FROM Quiz_Transaction_mst WHERE Quiz_ID ={id}";
+        //        LkDataConnection.Connection.ExecuteNonQuery(deleteQuery);
+
+        //        return Ok("Quiz_Transaction deleted successfully.");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(StatusCodes.Status500InternalServerError, $"Error: {ex.Message}");
+        //    }
+        //}
 
         [HttpDelete]
         [Route("DeleteQuiz/{date}/{userId?}")]

@@ -71,7 +71,7 @@ namespace Quiz_DataBank.Controllers
         [HttpPost]
 
         [Route("AddRole")]
-        [RoleAuthorize("Admin", "User","user1")]
+       // [RoleAuthorize("Admin", "User","user1")]
 
 
         public IActionResult AddRole([FromBody] RolesModel role)
@@ -110,7 +110,7 @@ namespace Quiz_DataBank.Controllers
             }
         }
 
-        [RoleAuthorize("Admin", "User")]
+       // [RoleAuthorize("Admin", "User")]
         [HttpPut]
         [Route("updateRole/{Role_ID}")]
         public IActionResult UpdateRole(int Role_ID, [FromBody] RolesModel role)

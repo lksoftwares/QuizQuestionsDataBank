@@ -269,12 +269,12 @@ namespace Quiz_DataBank.Controllers
                     }
                 }
 
-                string insertQuery = "INSERT INTO Quiz_AnsTransaction_mst (Ques_ID, User_ID, Answer,Quiz_Name) VALUES ";
+                string insertQuery = "INSERT INTO Quiz_AnsTransaction_mst (Ques_ID, User_ID, Answer,Quiz_Name,Answer_Date) VALUES ";
                 List<string> valueRows = new List<string>();
 
                 foreach (var quiz in quizList)
                 {
-                    valueRows.Add($"({quiz.Ques_ID}, {quiz.User_ID}, '{quiz.Answer}','{quiz.Quiz_Name}')");
+                    valueRows.Add($"({quiz.Ques_ID}, {quiz.User_ID}, '{quiz.Answer}','{quiz.Quiz_Name}','{quiz.Quiz_Date}')");
                 }
 
                 insertQuery += string.Join(", ", valueRows);
