@@ -83,7 +83,6 @@ namespace Quiz_DataBank.Controllers
                     Opt_C = row["Opt_C"]?.ToString() ?? string.Empty,
                     Opt_D = row["Opt_D"]?.ToString() ?? string.Empty,
                     Correct_Answer = row["Correct_Answer"]?.ToString() ?? string.Empty,
-                    Status = row["Status"]?.ToString() ?? string.Empty,
                     Topic_Name = row["Topic_Name"]?.ToString() ?? string.Empty,
                     Topic_ID = row["Topic_ID"] != DBNull.Value ? Convert.ToInt32(row["Topic_ID"]) : 0,
                     QuesType_ID = row["QuesType_ID"] != DBNull.Value ? Convert.ToInt32(row["QuesType_ID"]) : 0,
@@ -100,6 +99,8 @@ namespace Quiz_DataBank.Controllers
         //// -------------------------AddQuestions------------------------------
         [HttpPost]
         [Route("AddQuestions")]
+        [RoleAuthorize("Admin")]
+
         public IActionResult AddQuestions([FromBody] QuestionsModel ques)
         {
             try
@@ -144,6 +145,8 @@ namespace Quiz_DataBank.Controllers
 
         [HttpPut]
         [Route("updateQuestions/{Ques_ID}")]
+        [RoleAuthorize("Admin")]
+
         public IActionResult UpdateQuestion(int Ques_ID, [FromBody] QuestionsModel ques)
         {
             try
@@ -178,7 +181,7 @@ namespace Quiz_DataBank.Controllers
             try
             {
                 string checkQuery = $"SELECT COUNT(*) AS recordCount FROM Quiz_Transaction_mst WHERE Ques_ID = {Ques_ID}";
-
+                 
 
 
 

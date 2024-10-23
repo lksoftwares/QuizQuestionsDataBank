@@ -217,6 +217,7 @@ namespace Quiz_DataBank.Controllers
        // [AllowAnonymous]
         [HttpPost]
         [Route("SubmitAnswer")]
+        [RoleAuthorize("User")]
         public IActionResult SubmitAnswer([FromBody] List<Quiz_AnsTransactionModel> quizList)
         {
             if (quizList == null || quizList.Count == 0)
@@ -268,13 +269,15 @@ namespace Quiz_DataBank.Controllers
                         return StatusCode(StatusCodes.Status404NotFound, $"Quiz transaction not found for Question ID {quiz.Ques_ID} and User ID {quiz.User_ID}.");
                     }
                 }
+                DateTime currentDate = DateTime.Now;
 
-                string insertQuery = "INSERT INTO Quiz_AnsTransaction_mst (Ques_ID, User_ID, Answer,Quiz_Name,Answer_Date) VALUES ";
+
+                string insertQuery = "INSERT INTO Quiz_AnsTransaction_mst (Ques_ID, User_ID, Answer,Quiz_Name,Quiz_DateTime,Answer_Date) VALUES ";
                 List<string> valueRows = new List<string>();
 
                 foreach (var quiz in quizList)
                 {
-                    valueRows.Add($"({quiz.Ques_ID}, {quiz.User_ID}, '{quiz.Answer}','{quiz.Quiz_Name}','{quiz.Quiz_Date}')");
+                    valueRows.Add($"({quiz.Ques_ID}, {quiz.User_ID}, '{quiz.Answer}','{quiz.Quiz_Name}','{quiz.Quiz_Date}','{currentDate}')");
                 }
 
                 insertQuery += string.Join(", ", valueRows);
@@ -296,7 +299,7 @@ namespace Quiz_DataBank.Controllers
         public IActionResult TotalQuizAnsTransaction()
         {
             //string query = $"  SELECT COUNT(DISTINCT Answer_Date) AS TotalTests FROM Quiz_AnsTransaction_mst;";
-            string query = $" SELECT  COUNT(DISTINCT(Answer_Date)) AS TotalTests FROM Quiz_AnsTransaction_mst;";
+            string query = $" SELECT  COUNT(DISTINCT(Quiz_DateTime)) AS TotalTests FROM Quiz_AnsTransaction_mst;";
 
             //var connection
             //= new LkDataConnection.Connection();
@@ -317,7 +320,7 @@ namespace Quiz_DataBank.Controllers
         [Route("TodayAnsTransaction")]
         public IActionResult TodayAnsTransaction()
         {
-            string query = $" SELECT COUNT(DISTINCT User_ID) AS TotalRecordsSubmittedToday   FROM Quiz_AnsTransaction_mst   WHERE CAST(Answer_Date AS DATE) = CAST(GETDATE() AS DATE);";
+            string query = $" SELECT COUNT(DISTINCT User_ID) AS TotalRecordsSubmittedToday   FROM Quiz_AnsTransaction_mst   WHERE CAST(Quiz_DateTime AS DATE) = CAST(GETDATE() AS DATE);";
 
             //var connection = new LkDataConnection.Connection();
 
@@ -333,109 +336,14 @@ namespace Quiz_DataBank.Controllers
 
             return Ok(new { TotalRecordsSubmittedToday = 0 });
         }
-        //[HttpGet]
-        //[Route("Result")]
-        //public IActionResult UsersResult([FromQuery] IDictionary<string, string> param)
-        //{
-        //    string query = @"SELECT at.Answer_ID, at.Answer_Date, at.Ques_ID, at.User_ID, at.Answer, 
-        //                        q.Ques_Desc, q.Correct_Answer, U.User_Name, QZ.Quiz_Date, QZ.Quiz_Name, 
-        //                        CASE WHEN at.Answer = q.Correct_Answer THEN 'Correct' ELSE 'Incorrect' END AS Result 
-        //                 FROM Quiz_AnsTransaction_mst at
-        //                 JOIN Questions_mst q ON at.Ques_ID = q.Ques_ID
-        //                 JOIN Users_mst U ON at.User_ID = U.User_ID
-        //                 JOIN Quiz_Transaction_mst QZ ON at.Ques_ID = QZ.Ques_ID";
-
-        //    List<string> filter = new List<string>();
-        //    Dictionary<string, object> sqlparams = new Dictionary<string, object>();
-
-        //    if (param.TryGetValue("User_ID", out string User_ID))
-        //    {
-        //        filter.Add("U.User_ID = @User_ID");
-        //        sqlparams.Add("@User_ID", User_ID);
-        //    }
-
-        //    if (param.TryGetValue("QZ.Quiz_Name", out string Quiz_Name))
-        //    {
-        //        filter.Add("QZ.Quiz_Name = @Quiz_Name");
-        //        sqlparams.Add("@Quiz_Name", Quiz_Name);
-        //    }
-
-        //    if (param.TryGetValue("Quiz_Date", out string Quiz_Date))
-        //    {
-        //        if (DateTime.TryParse(Quiz_Date, out DateTime quizDateValue))
-        //        {
-        //            filter.Add("CAST(QZ.Quiz_Date AS DATE) = @Quiz_Date");
-        //            sqlparams.Add("@Quiz_Date", quizDateValue.ToString("yyyy-MM-dd"));
-        //        }
-        //        else
-        //        {
-        //            return Ok("Invalid Quiz_Date format. Please provide a valid date.");
-        //        }
-        //    }
-
-        //    if (filter.Count > 0)
-        //    {
-        //        query += " WHERE " + string.Join(" AND ", filter);
-        //    }
-
-        //    query += " ORDER BY QZ.Quiz_Date";
-
-        //    DataTable Table = _connection.ExecuteQueryWithResults(query, sqlparams);
-
-        //    var AnsList = new List<Quiz_AnsTransactionModel>();
-        //    int correctAns = 0;
-        //    int totalAnswers = Table.Rows.Count;
-
-
-        //    string totalQuestionsQuery = @" SELECT COUNT( at.Ques_ID) AS TotalQuestions 
-        //FROM Quiz_AnsTransaction_mst at
-        //JOIN Users_mst U ON at.User_ID = U.User_ID 
-        //JOIN Quiz_Transaction_mst QZ ON at.Ques_ID = QZ.Ques_ID";
-        //    if (filter.Count > 0)
-        //    {
-        //        totalQuestionsQuery += " WHERE " + string.Join(" AND ", filter);
-        //    }
-
-        //    DataTable totalQuestionsTable = _connection.ExecuteQueryWithResults(totalQuestionsQuery, sqlparams);
-        //    int totalQuestions = Convert.ToInt32(totalQuestionsTable.Rows[0]["TotalQuestions"]);
-
-
-        //    foreach (DataRow row in Table.Rows)
-        //    {
-        //        string result = row["Result"].ToString();
-        //        if (result == "Correct")
-        //        {
-        //            correctAns++;
-        //        }
-
-        //        AnsList.Add(new Quiz_AnsTransactionModel
-        //        {
-        //            User_Name = row["User_Name"].ToString(),
-        //            Ques_Desc = row["Ques_Desc"].ToString(),
-        //            Answer = row["Answer"].ToString(),
-        //            Correct_Answer = row["Correct_Answer"].ToString(),
-        //            Quiz_Date = row["Quiz_Date"].ToString(),
-        //            Result = result,
-        //            Quiz_Name = row["Quiz_Name"].ToString(),
-        //            User_ID = Convert.ToInt32(row["User_ID"]),
-        //        });
-        //    }
-
-        //    var score = new
-        //    {
-        //        CorrectAnswer = correctAns,
-        //        TotalQuestions = totalQuestions,
-        //    };
-
-        //    return Ok(new { ResultList = AnsList, ScoreResult = score });
-        //}
+    
 
 
         [HttpGet]
         [Route("Result")]
         public IActionResult UsersResult([FromQuery] IDictionary<string, string> param)
         {
-            string query = @"SELECT at.Answer_ID, at.Answer_Date, at.Ques_ID, at.User_ID, at.Answer, 
+            string query = @"SELECT at.Answer_ID, at.Quiz_DateTime, at.Ques_ID, at.User_ID, at.Answer, 
                q.Ques_Desc, q.Correct_Answer, U.User_Name, QZ.Quiz_Date, QZ.Quiz_Name, 
                CASE WHEN at.Answer = q.Correct_Answer THEN 'Correct' ELSE 'Incorrect' END AS Result 
         FROM Quiz_AnsTransaction_mst at
@@ -443,7 +351,7 @@ namespace Quiz_DataBank.Controllers
         JOIN Users_mst U ON at.User_ID = U.User_ID
         JOIN Quiz_Transaction_mst QZ ON at.Ques_ID = QZ.Ques_ID
         WHERE at.Answer_ID IS NOT NULL 
-          AND at.Answer_Date IS NOT NULL
+          AND at.Quiz_DateTime IS NOT NULL
           AND QZ.Quiz_Name = at.Quiz_Name  
           AND at.User_ID = QZ.User_ID     
           AND at.Ques_ID = QZ.Ques_ID     ";
@@ -463,12 +371,25 @@ namespace Quiz_DataBank.Controllers
                 sqlparams.Add("@Quiz_Name", Quiz_Name);
             }
 
+            //if (param.TryGetValue("Quiz_Date", out string Quiz_Date))
+            //{
+            //    if (DateTime.TryParse(Quiz_Date, out DateTime quizDateValue))
+            //    {
+            //        filter.Add("CAST(QZ.Quiz_Date AS DATE) = @Quiz_Date");
+            //        sqlparams.Add("@Quiz_Date", quizDateValue.ToString("yyyy-MM-dd"));
+            //    }
+            //    else
+            //    {
+            //        return Ok("Invalid Quiz_Date format. Please provide a valid date.");
+            //    }
+            //}
+
             if (param.TryGetValue("Quiz_Date", out string Quiz_Date))
             {
                 if (DateTime.TryParse(Quiz_Date, out DateTime quizDateValue))
                 {
-                    filter.Add("CAST(QZ.Quiz_Date AS DATE) = @Quiz_Date");
-                    sqlparams.Add("@Quiz_Date", quizDateValue.ToString("yyyy-MM-dd"));
+                    filter.Add("QZ.Quiz_Date  = @Quiz_Date");
+                    sqlparams.Add("@Quiz_Date", quizDateValue);
                 }
                 else
                 {
@@ -476,13 +397,16 @@ namespace Quiz_DataBank.Controllers
                 }
             }
 
-
             if (filter.Count > 0)
             {
                 query += " AND " + string.Join(" AND ", filter);
             }
 
             query += " ORDER BY QZ.Quiz_Date";
+            //foreach (var p in sqlparams)
+            //{
+            //    Console.WriteLine($"Parameter: {p.Key}, Value: {p.Value}");
+            //}
 
             DataTable Table = _connection.ExecuteQueryWithResults(query, sqlparams);
 

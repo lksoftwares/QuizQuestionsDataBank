@@ -6,7 +6,7 @@
         public int? Ques_ID { get; set; }
         public int? User_ID { get; set; }
         public string? Answer { get; set; }
-        public string? Answer_Date { get; set; }
+        public string? Quiz_DateTime { get; set; }
         public string? Correct_Answer { get; set; }
         public string? User_Name  { get; set; }
         public string? User_Email { get; set; }

@@ -8,11 +8,15 @@ using Microsoft.Extensions.FileProviders;
 using Quiz_DataBank;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 
-var builder = WebApplication.CreateBuilder(args);
+ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.Configure<KestrelServerOptions>(options => { options.AllowSynchronousIO = true; });
 
 builder.Services.Configure<IISServerOptions>(options => { options.AllowSynchronousIO = true; });
+//ConfigureServices _configureServices = new ConfigureServices();
+//_configureServices.ConfigureJWTServices(builder.Services, builder.Configuration);
+
+
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -25,7 +29,12 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
         };
+
+
     });
+
+//builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)r
+;
 
 builder.Services.AddCors(options =>
 {
@@ -84,6 +93,7 @@ app.Use(async (httpContext, next) =>
     {
         using var memStream = new MemoryStream();
         httpContext.Response.Body = memStream;
+
 
 
         await next(httpContext);

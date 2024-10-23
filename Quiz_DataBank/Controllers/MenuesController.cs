@@ -123,6 +123,8 @@ namespace Quiz_DataBank.Controllers
         //}
         [HttpPost]
         [Route("AddMenue")]
+        [RoleAuthorize("Admin")]
+
         public IActionResult AddMenue([FromBody] MenuesModel menu)
         {
             try
@@ -159,6 +161,8 @@ namespace Quiz_DataBank.Controllers
 
         [HttpPut]
         [Route("updateMenue/{Menu_ID}")]
+        [RoleAuthorize("Admin")]
+
         public IActionResult UpdateRole(int Menu_ID, [FromBody] MenuesModel menu)
         {
             try

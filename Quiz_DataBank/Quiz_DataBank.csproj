@@ -4,6 +4,7 @@
     <TargetFramework>net8.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <OutputType>Exe</OutputType>
   </PropertyGroup>
 
   <ItemGroup>
@@ -11,13 +12,8 @@
     <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="8.0.10" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="5.2.1" />
+    <PackageReference Include="SendGrid" Version="9.29.3" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Reference Include="LkDataConnection">
-      <HintPath>D:\Backup\LkDataConnection.dll</HintPath>
-    </Reference>
   </ItemGroup>
 
   <ItemGroup>
@@ -28,6 +24,12 @@
     <None Include="wwwroot\Public\images\e447113b-0588-4be2-b073-1683c180523f.jpeg" />
     <None Include="wwwroot\Public\images\e9c355ac-90a5-48bb-9240-6a358f7aa244.jpeg" />
     <None Include="wwwroot\Public\images\f903a142-a14c-46e1-b1aa-0e9520f7264d.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="LkDataConnection">
+      <HintPath>..\..\..\..\Backup\LkDataConnection.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>

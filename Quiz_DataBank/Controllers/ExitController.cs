@@ -14,6 +14,8 @@ namespace Quiz_DataBank.Controllers
             try
             {
 
+
+
                 var processStartInfo = new ProcessStartInfo
                 {
                     FileName = "cmd.exe",
@@ -34,17 +36,17 @@ namespace Quiz_DataBank.Controllers
 
                     if (process.ExitCode == 0)
                     {
-                        return Ok(new { message = "Process terminated successfully.", output });
+                        return Ok(new { message = " exit successfully.", output });
                     }
                     else
                     {
-                        return BadRequest(new { message = "Failed to terminate process.", error });
+                        return BadRequest(new { message = "Failed to  exit", error });
                     }
                 }
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred", error = ex.Message });
+                return StatusCode(500, new { message = "error ", error = ex.Message });
             }
 
         }

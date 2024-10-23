@@ -11,6 +11,8 @@ using System.Text;
 using LkDataConnection;
 using Microsoft.AspNetCore.Cors;
 using Microsoft.Data.SqlClient;
+using System.Net.Mail;
+using System.Net;
 namespace Quiz_DataBank.Controllers
 {
     [Authorize]
@@ -250,9 +252,41 @@ namespace Quiz_DataBank.Controllers
                     return StatusCode(StatusCodes.Status208AlreadyReported, new { message = "User Email ,Name,Password can't be blank " });
 
                 }
+                if (newUser.User_Name != null || !newUser.User_Name.IsNullOrEmpty())
+                {
+                    var username = new System.Globalization.CultureInfo("en-US", false).TextInfo.ToTitleCase(newUser.User_Name.ToLower());
+                    newUser.User_Name = username;
+
+                }
+
+                //SendEmail sendEmail = new SendEmail();
+                //sendEmail.SendConfirmationEmail(newUser.User_Email, newUser.User_Name,[ "F:\\vs2022\\sqlAuthJWt\\Quiz_DataBank\\Quiz_DataBank\\wwwroot\\Public\\images\\03c1dafe-0382-4300-b6c1-e7566a383444.png", "F:\\vs2022\\sqlAuthJWt\\Quiz_DataBank\\Quiz_DataBank\\wwwroot\\Public\\images\\0d5ef12c-7256-4cc3-b7eb-981e6765de28.jpeg"]);
+                LkDataConnection.EmailMessages _lkemail = new LkDataConnection.EmailMessages();
+                LkDataConnection.EmailConfiguration _emailConfig = new LkDataConnection.EmailConfiguration();
+                LkDataConnection.EmailAttributesDet _attribute = new LkDataConnection.EmailAttributesDet();
+                _emailConfig.EmailUserName = "haseenrajput012@gmail.com";
+                _emailConfig.EmailPassword = "ngmp xpqr jcas hjrd";
+                _emailConfig.SSL = true;
+
+                _emailConfig.SmtpHost = "smtp.gmail.com";
+                _emailConfig.SmtpPort = 587;
+                _attribute.Mailto = ["1506shreya@gmail.com", "haseencomputer016@gmail.com"];
+                _attribute.Subject = "hello";
+                _attribute.Mailbody = " hello from body";
+                _attribute.IsBodyHtml = false;
+                _attribute.Mailbcc = ["1506shreya@gmail.com", "haseencomputer016@gmail.com"];
+                _attribute.Mailcc = ["1506shreya@gmail.com", "haseencomputer016@gmail.com"];
+                _attribute.AttachmentFiles = ["F:\\vs2022\\sqlAuthJWt\\Quiz_DataBank\\Quiz_DataBank\\wwwroot\\Public\\images\\03c1dafe-0382-4300-b6c1-e7566a383444.png", "F:\\vs2022\\sqlAuthJWt\\Quiz_DataBank\\Quiz_DataBank\\wwwroot\\Public\\images\\0d5ef12c-7256-4cc3-b7eb-981e6765de28.jpeg"];
+
+
+
+                _attribute = _lkemail.SendEmail(_emailConfig, _attribute);
+
+
                 _query = _dc.InsertOrUpdateEntity(newUser, "Users_mst", -1);
                 return StatusCode(StatusCodes.Status200OK, new { message = "USer Register successfully"});
-
+                
+         
 
            //     return Ok("USer Register successfully");
 
@@ -263,7 +297,6 @@ namespace Quiz_DataBank.Controllers
             }
 
         }
-
         private string GenerateToken(LoginModel users)
         {
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:Key"]));
@@ -308,7 +341,7 @@ namespace Quiz_DataBank.Controllers
                 // string realp = PasswordUtility.DecryptPassword(hashedPassword);
 
                 //         string query = $"SELECT U.*, R.RoleName, R.Role_ID FROM Users_mst U JOIN Roles_mst R ON U.Role_ID = R.Role_ID WHERE U.User_Email = '{user.User_Email}' AND U.User_Password='{hashedPassword}'";
-                string query = $"SELECT * FROM Users_mst  WHERE User_Email = '{user.User_Email}' AND User_Password='{hashedPassword}'";
+                string query = $"SELECT U.*,R.* FROM Users_mst U  Join Roles_mst R on U.Role_ID=R.Role_ID WHERE  U.User_Email = '{user.User_Email}' AND U.User_Password='{hashedPassword}'";
 
                 var connection = new LkDataConnection.Connection();
 
@@ -346,22 +379,71 @@ namespace Quiz_DataBank.Controllers
                 }
 
 
-                string token = GenerateToken(new LoginModel
-                {
-                    User_ID = Convert.ToInt32(userData["User_ID"]),
-                    User_Name = userData["User_Name"].ToString(),
-                    Role_ID = Convert.ToInt32(userData["Role_ID"]),
+                //string token = GenerateToken(new LoginModel
+                //{
+                //User_ID = Convert.ToInt32(userData["User_ID"]),
+                //    User_Name = userData["User_Name"].ToString(),
+                //    Role_ID = Convert.ToInt32(userData["Role_ID"]),
 
-                    //  userRole = userData["RoleName"].ToString()
-                });
-                ExtractTokenInformation(token);
+                //    //  userRole = userData["RoleName"].ToString()
+                //});
+                WebToken _web = new WebToken();
+                UserDetails _userdetails = new UserDetails();
+                List<KeyDetails> lst = new List<KeyDetails>();
+                List<KeyDetails> lst1 = new List<KeyDetails>
+                {
+                    new KeyDetails
+                { KeyName = "User_ID", KeyValue = userData["User_ID"].ToString() },
+
+                                        new KeyDetails
+{ KeyName = "Role_ID", KeyValue = userData["Role_ID"].ToString() },
+
+
+                    new KeyDetails
+                { KeyName = "User_Name", KeyValue = userData["User_Name"].ToString() }
+                };
+
+                lst.Add(new KeyDetails
+                { KeyName = "User_ID", KeyValue = userData["User_ID"].ToString() });
+                    lst.Add(new KeyDetails
+                    { KeyName = "User_Name", KeyValue = userData["User_Name"].ToString() });
+
+                lst.Add(new KeyDetails
+                { KeyName = "Role_ID", KeyValue = userData["Role_ID"].ToString() });
+                _userdetails.ListKeydetails = lst1;
+                //string[] _Keynames = ["User_ID", "User_Name", "Role_ID"];
+                //string[] _Keyvalues = [userData["User_ID"].ToString(), userData["User_Name"].ToString(), userData["Role_ID"].ToString()];
+                string token = _web.GenerateToken(new LkDataConnection.WebTokenValidationParameters
+                { ValidIssuer = "http://localhost:7242/",
+                    ValidAudience = "http://localhost:7242/",
+                    IssuerSigningKey = "2Fsk5LBU5j1DrPldtFmLWeO8uZ8skUzwhe3ktVimUE8l=",
+
+                }, new LkDataConnection.UserDetails
+                {
+
+                    ListKeydetails = _userdetails.ListKeydetails
+
+
+                    //  ListKeydetails = _userdetails.ListKeydetails
+
+                    //User_Id = Convert.ToInt32(userData["User_ID"]),
+                    //User_Name = userData["User_Name"].ToString(),
+                    //Role_Id = Convert.ToInt32(userData["Role_ID"]),
+                }); ; ; 
+                WebTokenDetails _tokendetails = new WebTokenDetails();
+                _tokendetails.Token = token;
+                _tokendetails.TokenKeyName = "Role_ID";
+                _tokendetails = _web.ExtractTokenInformation(_tokendetails);
+
+                //ExtractTokenInformation(token);
                 Console.WriteLine($"Here is the token {token}");
 
                 response = Ok(new
                 {
                     token,
                     user_id = userData["User_ID"],
-                    Role_ID = userData["Role_ID"]
+                    Role_ID = userData["Role_ID"],
+                    RoleName= userData["RoleName"]
 
                 });
 
@@ -390,7 +472,9 @@ namespace Quiz_DataBank.Controllers
                 string roleId = roleClaim.Value;
                 Console.WriteLine($"Role ID: {roleId}");
             }
-            var userIdClaim = jsonToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
+            var userIdClaim = jsonToken.Claims.FirstOrDefault(c => c.Type == "User_ID");
+
+          //  var userIdClaim = jsonToken.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier);
             if (userIdClaim != null)
             {
                 string userId = userIdClaim.Value;
@@ -407,6 +491,8 @@ namespace Quiz_DataBank.Controllers
         }
         [HttpPut]
         [Route("updateUsers/{User_ID}")]
+      //  [RoleAuthorize("Admin")]
+
         public IActionResult updateUsers(int User_ID, [FromForm] UsersModel user)
         {
             try
@@ -439,6 +525,12 @@ namespace Quiz_DataBank.Controllers
 
                     user.User_Password = hashedPassword;
                 }
+                if(user.User_Name!=null || !user.User_Name.IsNullOrEmpty())
+                {
+                    var username = new System.Globalization.CultureInfo("en-US", false).TextInfo.ToTitleCase(user.User_Name.ToLower());
+                    user.User_Name = username;
+
+                }
 
                 _query = _dc.InsertOrUpdateEntity(user, "Users_mst", User_ID, "User_ID", "wwwroot/Public/Images");
                 return StatusCode(StatusCodes.Status200OK, new { message = "Users Updated Successfully", DUP = false });
@@ -449,6 +541,40 @@ namespace Quiz_DataBank.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, $"Error{ex.Message}");
             }
         }
+        //[HttpDelete]
+        //[Route("deleteUser/{User_ID}")]
+        //public IActionResult DeleteUserName(int User_ID)
+        //{
+        //    try
+        //    {
+
+        //        string checkQuery = $"SELECT COUNT(*) AS recordCount FROM Quiz_Transaction_mst WHERE User_ID = {User_ID}";
+
+
+
+
+        //        int result = Convert.ToInt32(_connection.ExecuteScalar(checkQuery));
+        //        if (result > 0)
+        //        {
+        //            return Ok("Can't delete Exists in another table  ");
+        //        }
+        //        string deleteUserQuery = $"Delete from Users_mst where User_ID='{User_ID}'";
+
+        //        LkDataConnection.Connection.ExecuteNonQuery(deleteUserQuery);
+        //        //  _connection.ExecuteQueryWithoutResult(deleteUserQuery);
+        //        return Ok("User Deleted successfully");
+
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(StatusCodes.Status500InternalServerError, $"Error{ex.Message}");
+        //    }
+        //}
+
+
+
+
+
         [HttpDelete]
         [Route("deleteUser/{User_ID}")]
         public IActionResult DeleteUserName(int User_ID)
@@ -456,27 +582,39 @@ namespace Quiz_DataBank.Controllers
             try
             {
                 string checkQuery = $"SELECT COUNT(*) AS recordCount FROM Quiz_Transaction_mst WHERE User_ID = {User_ID}";
-
-
-
-
                 int result = Convert.ToInt32(_connection.ExecuteScalar(checkQuery));
+
                 if (result > 0)
                 {
-                    return Ok("Can't delete Exists in another table  ");
+                    return Ok("Can't delete. Exists in another table.");
                 }
-                string deleteUserQuery = $"Delete from Users_mst where User_ID='{User_ID}'";
+                _connection.GetSqlConnection().Close();
 
+                string roleCheckQuery = $"SELECT COUNT(*) AS roleCount FROM Users_mst WHERE Role_ID = 5";
+                int roleCount = Convert.ToInt32(_connection.ExecuteScalar(roleCheckQuery));
+                _connection.GetSqlConnection().Close();
+
+                string currentUserRoleQuery = $"SELECT COUNT(*) AS currentUserRoleCount FROM Users_mst WHERE User_ID = {User_ID} AND Role_ID = 5";
+                int currentUserRoleCount = Convert.ToInt32(_connection.ExecuteScalar(currentUserRoleQuery));
+
+                if (roleCount == 1 && currentUserRoleCount == 1)
+                {
+                    return Ok("Can't delete. This is the only user with Role_ID = 5.");
+                }
+                _connection.GetSqlConnection().Close();
+
+
+                string deleteUserQuery = $"DELETE FROM Users_mst WHERE User_ID = {User_ID}";
                 LkDataConnection.Connection.ExecuteNonQuery(deleteUserQuery);
-                //  _connection.ExecuteQueryWithoutResult(deleteUserQuery);
-                return Ok("User Deleted successfully");
 
+                return Ok("User deleted successfully.");
             }
             catch (Exception ex)
             {
-                return StatusCode(StatusCodes.Status500InternalServerError, $"Error{ex.Message}");
+                return StatusCode(StatusCodes.Status500InternalServerError, $"Error: {ex.Message}");
             }
         }
+
         //[HttpGet]
         //[Route("TopUser")]
         //public IActionResult GetTopUser()
@@ -561,7 +699,7 @@ namespace Quiz_DataBank.Controllers
 
                 if (!string.IsNullOrEmpty(imageName))
                 {
-                    var imageUrl = $"http://192.168.1.60:7241/public/images/{imageName}";
+                    var imageUrl = $"http://192.168.1.54:7243/public/images/{imageName}";
 
                     return Ok(new { ImageUrl = imageUrl });
                 }
@@ -594,7 +732,7 @@ namespace Quiz_DataBank.Controllers
      Quiz_Transaction_mst qt ON qat.Ques_ID = qt.Ques_ID AND qat.User_ID = qt.User_ID
  WHERE 
      qat.User_ID = {User_ID} AND qat.Answer_ID IS NOT NULL 
-  AND qat.Answer_Date IS NOT NULL
+  AND qat.Quiz_DateTime IS NOT NULL
   AND qt.Quiz_Name = qat.Quiz_Name  
   AND qat.User_ID = qt.User_ID     
   AND qat.Ques_ID = qt.Ques_ID  
@@ -619,7 +757,7 @@ namespace Quiz_DataBank.Controllers
      Quiz_Transaction_mst qt ON qat.Ques_ID = qt.Ques_ID AND qat.User_ID = qt.User_ID
  WHERE 
      qat.User_ID = {User_ID} AND qat.Answer_ID IS NOT NULL 
-  AND qat.Answer_Date IS NOT NULL
+  AND qat.Quiz_DateTime IS NOT NULL
   AND qt.Quiz_Name = qat.Quiz_Name  
   AND qat.User_ID = qt.User_ID     
   AND qat.Ques_ID = qt.Ques_ID  
@@ -667,4 +805,6 @@ namespace Quiz_DataBank.Controllers
 
 
     }
+
+
 }

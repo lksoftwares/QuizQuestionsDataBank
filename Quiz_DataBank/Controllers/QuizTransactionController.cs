@@ -42,7 +42,7 @@ namespace Quiz_DataBank.Controllers
         SELECT 
             QT.*,
             Q.Ques_Desc,Q.Ques_ID ,
-            Q.Opt_A, Q.Opt_B, Q.Opt_C, Q.Opt_D, Q.Correct_Answer, Q.Status, Q.Topic_ID, Q.QuesType_ID, Q.Remarks,
+            Q.Opt_A, Q.Opt_B, Q.Opt_C, Q.Opt_D, Q.Correct_Answer, Q.Topic_ID, Q.QuesType_ID, Q.Remarks,
             U.*, 
             T.*, 
             CASE 
@@ -64,7 +64,7 @@ namespace Quiz_DataBank.Controllers
         SELECT 
             MAX(QT.Quiz_ID) AS Quiz_ID,
             Q.Ques_Desc, Q.Ques_ID ,
-            Q.Opt_A, Q.Opt_B, Q.Opt_C, Q.Opt_D, Q.Correct_Answer, Q.Status, Q.Topic_ID, Q.QuesType_ID, Q.Remarks,
+            Q.Opt_A, Q.Opt_B, Q.Opt_C, Q.Opt_D, Q.Correct_Answer,  Q.Topic_ID, Q.QuesType_ID, Q.Remarks,
             MAX(U.User_ID) AS User_ID, 
             MAX(U.User_Email) AS User_Email,
             MAX(U.User_Name) AS User_Name,
@@ -72,6 +72,8 @@ namespace Quiz_DataBank.Controllers
             MAX(T.Topic_Name) AS Topic_Name,
             MAX(QT.Quiz_Name) AS Quiz_Name,
             MAX(QT.Quiz_Date) AS Quiz_Date, 
+			            MAX(QT.Allowed_Time) AS Allowed_Time,
+
             CASE 
                 WHEN '{currentDate}' BETWEEN MAX(QT.Quiz_Date) AND DATEADD(MINUTE, MAX(QT.Allowed_Time), MAX(QT.Quiz_Date)) THEN 1 
                 ELSE 0 
@@ -133,7 +135,7 @@ namespace Quiz_DataBank.Controllers
             {
                 query += @"
             GROUP BY 
-               Q.Ques_ID, Q.Ques_Desc, Q.Opt_A, Q.Opt_B, Q.Opt_C, Q.Opt_D, Q.Correct_Answer, Q.Status, Q.Topic_ID, Q.QuesType_ID, Q.Remarks 
+               Q.Ques_ID, Q.Ques_Desc, Q.Opt_A, Q.Opt_B, Q.Opt_C, Q.Opt_D, Q.Correct_Answer, Q.Topic_ID, Q.QuesType_ID, Q.Remarks 
             ORDER BY MAX(QT.Quiz_Date) DESC;
         ";
             }
@@ -152,23 +154,24 @@ namespace Quiz_DataBank.Controllers
                     DateTime date = Convert.ToDateTime(row["Quiz_Date"]);
                     bool isAllowed = Convert.ToBoolean(row["IsAllowed"]);
 
-                    quesList.Add(new QuizTransactionModel
-                    {
-                        Quiz_ID = Convert.ToInt32(row["Quiz_ID"]),
-                        User_ID = Convert.ToInt32(row["User_ID"]),
-                        Ques_ID = Convert.ToInt32(row["Ques_ID"]),
-                        Ques_Desc = row["Ques_Desc"].ToString(),
-                        Opt_A = row["Opt_A"].ToString(),
-                        Opt_B = row["Opt_B"].ToString(),
-                        Opt_C = row["Opt_C"].ToString(),
-                        Opt_D = row["Opt_D"].ToString(),
-                        Quiz_Date = date,
-                        User_Email = row["User_Email"].ToString(),
-                        Topic_Name = row["Topic_Name"].ToString(),
-                        User_Name = row["User_Name"].ToString(),
-                        Quiz_Name = row["Quiz_Name"].ToString(),
+                quesList.Add(new QuizTransactionModel
+                {
+                    Quiz_ID = Convert.ToInt32(row["Quiz_ID"]),
+                    User_ID = Convert.ToInt32(row["User_ID"]),
+                    Ques_ID = Convert.ToInt32(row["Ques_ID"]),
+                    Ques_Desc = row["Ques_Desc"].ToString(),
+                    Opt_A = row["Opt_A"].ToString(),
+                    Opt_B = row["Opt_B"].ToString(),
+                    Opt_C = row["Opt_C"].ToString(),
+                    Opt_D = row["Opt_D"].ToString(),
+                    Quiz_Date = date,
+                    User_Email = row["User_Email"].ToString(),
+                    Topic_Name = row["Topic_Name"].ToString(),
+                    User_Name = row["User_Name"].ToString(),
+                    Quiz_Name = row["Quiz_Name"].ToString(),
+                    Allowed_Time = Convert.ToInt32(row["Allowed_Time"]),
                         IsAllowed = isAllowed
-                    });
+                }) ;
                 
               
             }
@@ -289,6 +292,8 @@ namespace Quiz_DataBank.Controllers
 
         [HttpPost]
         [Route("AddQuizTransaction")]
+        [RoleAuthorize("Admin")]
+
         public IActionResult AddQuizTransaction([FromBody] List<QuizTransactionModel> quizList)
         {
             if (quizList == null || quizList.Count == 0)
@@ -402,6 +407,8 @@ namespace Quiz_DataBank.Controllers
 
         [HttpPost]
         [Route("CopyQuizTransaction")]
+       [RoleAuthorize("Admin")]
+
         public IActionResult CopyQuizTransaction([FromBody] List<QuizTransactionModel> quizList)
         {
 
@@ -479,6 +486,8 @@ namespace Quiz_DataBank.Controllers
 
         [HttpPut]
         [Route("updateQuizTransaction/{Quiz_ID}")]
+        [RoleAuthorize("Admin")]
+
         public IActionResult updateQuizTransaction(int Quiz_ID, [FromBody] QuizTransactionModel quiz)
         {
             try
@@ -644,6 +653,7 @@ FROM
 
                         Quiz_Date = Convert.ToDateTime(row["Quiz_Date"]),
                         Quiz_Name = row["Quiz_Name"].ToString(),
+                        Allowed_Time = Convert.ToInt32( row["Allowed_Time"]),
                         IsAllowed = isAllowed ? true : false
 
 
@@ -668,7 +678,9 @@ FROM
         {
             try
             {
-                string query = $" SELECT  Distinct(Q.Quiz_Date) ,Q.Quiz_Name,U.User_ID FROM Quiz_Transaction_mst Q join Users_mst U ON Q.User_ID = U.User_ID   WHERE Quiz_Date >= GETDATE()   AND Quiz_Date <= DATEADD(DAY, 30, GETDATE())  ";
+                //  string query = $" SELECT  Distinct(Q.Quiz_Date) ,Q.Quiz_Name,U.User_ID FROM Quiz_Transaction_mst Q join Users_mst U ON Q.User_ID = U.User_ID   WHERE Quiz_Date >= GETDATE()   AND Quiz_Date <= DATEADD(DAY, 30, GETDATE())  ";
+                //  string query = $"SELECT DISTINCT Q.Quiz_Date, Q.Quiz_Name, U.User_ID FROM Quiz_Transaction_mst Q JOIN Users_mst U ON Q.User_ID = U.User_ID WHERE CAST(Q.Quiz_Date AS DATE) >= CAST(GETDATE() AS DATE) AND Q.Quiz_Date <= DATEADD(DAY, 30, GETDATE())";
+                string query = $"SELECT DISTINCT Q.Quiz_Date, Q.Quiz_Name, U.User_ID FROM Quiz_Transaction_mst Q JOIN Users_mst U ON Q.User_ID = U.User_ID WHERE CAST(Q.Quiz_Date AS DATE) >= CAST(GETDATE() AS DATE)   AND Q.Quiz_Date <= DATEADD(DAY, 30, GETDATE())  AND DATEADD(MINUTE, Q.Allowed_Time, Q.Quiz_Date) > GETDATE()";
                 List<string> filter = new List<string>();
                 Dictionary<string, object> sqlparams = new Dictionary<string, object>();
 
@@ -676,6 +688,7 @@ FROM
                 {
                     filter.Add("U.User_ID = @User_ID");
                     sqlparams.Add("@User_ID", User_ID);
+
                 }
                 if (filter.Count > 0)
                 {
@@ -711,46 +724,206 @@ FROM
                 return StatusCode(StatusCodes.Status500InternalServerError, $"Error: {ex.Message}");
             }
         }
+        //[HttpGet]
+        //[Route("GetQuizDates")]
+        //public IActionResult GetQuizDates([FromQuery] IDictionary<string, string> param)
+        //{
+        //    try
+        //    {
+        //        string query;
+        //        if (param.TryGetValue("DateTime", out string dateTime))
+        //        {
+        //             query = "SELECT DISTINCT Quiz_DateTime AS Quiz_DateTime FROM [Quiz_AnsTransaction_mst]";
+
+        //        }
+        //        else
+        //        {
+        //            query = "SELECT DISTINCT CAST(Quiz_DateTime AS DATE) AS Quiz_DateTime FROM [Quiz_AnsTransaction_mst]";
+
+        //        }
+        //        List<string> filters = new List<string>();
+        //        Dictionary<string, object> sqlparams = new Dictionary<string, object>();
+
+        //        if (param.TryGetValue("User_ID", out string userId))
+        //        {
+        //            filters.Add("User_ID = @User_ID");
+        //            sqlparams.Add("@User_ID", userId);
+        //        }
+
+
+        //        if (param.TryGetValue("DateTime", out string dateTimes))
+        //        {
+        //            filters.Add("CAST(Quiz_DateTime AS DATE) = @DateTime");
+        //            sqlparams.Add("@DateTime", dateTimes);
+        //        }
+        //        else
+        //        {
+        //            filters.Add("CAST(Quiz_DateTime AS DATE) <= CAST(GETDATE() AS DATE)");
+        //        }
+
+        //        if (filters.Count > 0)
+        //        {
+        //            query += " WHERE " + string.Join(" AND ", filters);
+        //        }
+
+        //        query += " ORDER BY Quiz_DateTime DESC;";
+
+        //        DataTable table = _connection.ExecuteQueryWithResults(query, sqlparams);
+
+        //        var quizDates = new List<Quiz_AnsTransactionModel>();
+        //        foreach (DataRow row in table.Rows)
+        //        {
+        //            var quiz = new Quiz_AnsTransactionModel
+        //            {
+        //                Quiz_DateTime = DateTime.TryParse(row["Quiz_DateTime"].ToString(), out DateTime quizDateTime)
+        //                ? quizDateTime.ToString("yyyy-MM-dd") 
+        //                : string.Empty,
+        //                //Quiz_DateTime = row["Quiz_DateTime"].ToString(),
+        //            };
+
+        //            quizDates.Add(quiz);
+        //        }
+
+        //        return Ok(quizDates);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(StatusCodes.Status500InternalServerError, $"Error: {ex.Message}");
+        //    }
+        //}
+
+
         [HttpGet]
         [Route("GetQuizDates")]
         public IActionResult GetQuizDates([FromQuery] IDictionary<string, string> param)
         {
             try
             {
-                //  string query = $"SELECT DISTINCT CAST(Quiz_Date AS DATE) AS Quiz_Date  FROM Quiz_Transaction_mst WHERE CAST(Quiz_Date AS DATE) < CAST(GETDATE() AS DATE) AND User_ID = {User_ID} ORDER BY Quiz_Date DESC;";
-                string query = $"    SELECT DISTINCT CAST(Answer_Date as Date) As Answer_Date  FROM [Quiz_AnsTransaction_mst]  ";
-                List<string> filter = new List<string>();
+                string query;
+                if (param.TryGetValue("DateTime", out string dateTime))
+                {
+                    query = "SELECT DISTINCT Quiz_DateTime AS Quiz_DateTime FROM [Quiz_AnsTransaction_mst]";
+                }
+                else
+                {
+                    query = "SELECT DISTINCT CAST(Quiz_DateTime AS DATE) AS Quiz_DateTime FROM [Quiz_AnsTransaction_mst]";
+                }
+
+                List<string> filters = new List<string>();
                 Dictionary<string, object> sqlparams = new Dictionary<string, object>();
 
-                if (param.TryGetValue("User_ID", out string User_ID))
+                if (param.TryGetValue("User_ID", out string userId))
                 {
-                    query += $@" WHERE  CAST(Answer_Date AS DATE) <= CAST(GETDATE() AS DATE) AND User_ID = {User_ID} ";
+                    filters.Add("User_ID = @User_ID");
+                    sqlparams.Add("@User_ID", userId);
                 }
 
-                query += " ORDER BY Answer_Date DESC; ";
-                DataTable Table = _connection.ExecuteQueryWithResult(query);
-
-                var QuizDates = new List<Quiz_AnsTransactionModel>();
-                foreach (DataRow row in Table.Rows)
+                if (param.TryGetValue("DateTime", out string dateTimes))
                 {
-                    var quiz = new Quiz_AnsTransactionModel
+                    filters.Add("CAST(Quiz_DateTime AS DATE) = @DateTime");
+                    sqlparams.Add("@DateTime", dateTimes);
+                }
+                else
+                {
+                    filters.Add("CAST(Quiz_DateTime AS DATE) <= CAST(GETDATE() AS DATE)");
+                }
+
+                if (filters.Count > 0)
+                {
+                    query += " WHERE " + string.Join(" AND ", filters);
+                }
+
+                query += " ORDER BY Quiz_DateTime DESC;";
+
+                DataTable table = _connection.ExecuteQueryWithResults(query, sqlparams);
+
+                var quizDates = new List<Quiz_AnsTransactionModel>();
+                foreach (DataRow row in table.Rows)
+                {
+                    var quiz = new Quiz_AnsTransactionModel();
+
+                    if (param.TryGetValue("DateTime", out _))
                     {
+                        quiz.Quiz_DateTime = row["Quiz_DateTime"].ToString();
 
-                        Answer_Date = row["Answer_Date"].ToString(),
+                    }
+                    else
+                    {
+                        quiz.Quiz_DateTime = DateTime.TryParse(row["Quiz_DateTime"].ToString(), out DateTime quizDateTime)
+                         ? quizDateTime.ToString("yyyy-MM-dd") 
+                         : string.Empty;
+                    }
 
-                    };
-
-                    QuizDates.Add(quiz);
+                    quizDates.Add(quiz);
                 }
 
-                return Ok(QuizDates);
+                return Ok(quizDates);
             }
-
             catch (Exception ex)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError, $"Error: {ex.Message}");
             }
         }
+
+
+        //[HttpGet]
+        //[Route("GetQuizDates")]
+        //public IActionResult GetQuizDates([FromQuery] IDictionary<string, string> param)
+        //{
+        //    try
+        //    {
+
+
+        //        string query;
+
+
+        //        //  string query = $"SELECT DISTINCT CAST(Quiz_Date AS DATE) AS Quiz_Date  FROM Quiz_Transaction_mst WHERE CAST(Quiz_Date AS DATE) < CAST(GETDATE() AS DATE) AND User_ID = {User_ID} ORDER BY Quiz_Date DESC;";
+
+
+        //             query = $"    SELECT DISTINCT CAST(Quiz_DateTime as Date) As Quiz_DateTime  FROM [Quiz_AnsTransaction_mst]  ";
+        //            List<string> filter = new List<string>();
+        //            Dictionary<string, object> sqlparams = new Dictionary<string, object>();
+
+        //            if (param.TryGetValue("User_ID", out string User_ID))
+        //            {
+        //                query += $@" WHERE  CAST(Quiz_DateTime AS DATE) <= CAST(GETDATE() AS DATE) AND User_ID = {User_ID} ";
+        //            }
+        //        if (param.TryGetValue("DateTime", out string DateTime))
+        //        {
+        //            filter.Add("DateTime = @DateTime");
+        //            sqlparams.Add("@DateTime", DateTime);
+
+        //        }
+
+
+
+        //        query += " ORDER BY Quiz_DateTime DESC; ";
+        //        DataTable Table = _connection.ExecuteQueryWithResult(query);
+
+        //        var QuizDates = new List<Quiz_AnsTransactionModel>();
+        //        foreach (DataRow row in Table.Rows)
+        //        {
+        //            var quiz = new Quiz_AnsTransactionModel
+        //            {
+
+        //                Quiz_DateTime = row["Quiz_DateTime"].ToString(),
+
+        //            };
+
+        //            QuizDates.Add(quiz);
+        //        }
+
+        //        return Ok(QuizDates);
+        //    }
+
+        //    catch (Exception ex)
+        //    {
+        //        return StatusCode(StatusCodes.Status500InternalServerError, $"Error: {ex.Message}");
+        //    }
+        //}
+
+
+
         //[HttpGet]
         //[Route("GetQuizDates/{User_ID}")]
         //public IActionResult GetQuizDates(int User_ID)
@@ -892,8 +1065,8 @@ FROM
                if(userId!=null)
                 {
                     string answerCheckQuery = hasTimeComponent
-               ? $"SELECT COUNT(*) FROM Quiz_AnsTransaction_mst WHERE Answer_Date = '{date}' AND User_ID={userId}"
-               : $"SELECT COUNT(*) FROM Quiz_AnsTransaction_mst WHERE CAST(Answer_Date AS DATE) = '{date.Date}'  AND User_ID={userId}";
+               ? $"SELECT COUNT(*) FROM Quiz_AnsTransaction_mst WHERE Quiz_DateTime = '{date}' AND User_ID={userId}"
+               : $"SELECT COUNT(*) FROM Quiz_AnsTransaction_mst WHERE CAST(Quiz_DateTime AS DATE) = '{date.Date}'  AND User_ID={userId}";
                    
 
                     var answerCount = (int)_connection.ExecuteScalar(answerCheckQuery);
@@ -907,8 +1080,8 @@ FROM
                 else
                 {
                     string answerCheckQuery = hasTimeComponent
-                      ? $"SELECT COUNT(*) FROM Quiz_AnsTransaction_mst WHERE Answer_Date = '{date}'"
-                      : $"SELECT COUNT(*) FROM Quiz_AnsTransaction_mst WHERE CAST(Answer_Date AS DATE) = '{date.Date}'";
+                      ? $"SELECT COUNT(*) FROM Quiz_AnsTransaction_mst WHERE Quiz_DateTime = '{date}'"
+                      : $"SELECT COUNT(*) FROM Quiz_AnsTransaction_mst WHERE CAST(Quiz_DateTime AS DATE) = '{date.Date}'";
 
                     var answerCount = (int)_connection.ExecuteScalar(answerCheckQuery);
                     _connection.GetSqlConnection().Close();
@@ -1034,7 +1207,7 @@ FROM
                     // string answerCheckQuery = oldHasTimeComponent
                     //   ? $"SELECT COUNT(*) FROM Quiz_AnsTransaction_mst WHERE Answer_Date = '{oldDate}' AND User_ID={userid}"
                     //    : $"SELECT COUNT(*) FROM Quiz_AnsTransaction_mst WHERE CAST(Answer_Date AS DATE) = '{oldDate.Date}'  AND User_ID={userid}";
-                    string answerCheckQuery = $"SELECT COUNT(*) FROM Quiz_AnsTransaction_mst WHERE Answer_Date = '{oldDate}'";
+                    string answerCheckQuery = $"SELECT COUNT(*) FROM Quiz_AnsTransaction_mst WHERE Quiz_DateTime = '{oldDate}'";
                     var answerCount = (int)_connection.ExecuteScalar(answerCheckQuery);
                     _connection.GetSqlConnection().Close();
 

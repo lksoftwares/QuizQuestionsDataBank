@@ -7,6 +7,7 @@ using Quiz_DataBank.Classes;
 using Microsoft.AspNetCore.Http.HttpResults;
 using System.Data.Common;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.IdentityModel.Tokens;
 namespace Quiz_DataBank.Controllers
 {
     //[Authorize]
@@ -24,7 +25,7 @@ namespace Quiz_DataBank.Controllers
             _connection = connection;
             DataAccessMethod();
         }
-
+        
         private void DataAccessMethod()
         {
             LkDataConnection.Connection.ConnectionStr = _connection.GetSqlConnection().ConnectionString;
@@ -38,7 +39,6 @@ namespace Quiz_DataBank.Controllers
         [HttpGet]
 
         [Route("AllTopic")]
-  //[RoleAuthorize("Admin")]
 
         public IActionResult GetAllTopics()
         {
@@ -61,12 +61,15 @@ namespace Quiz_DataBank.Controllers
 
                 });
             }
+           
             return Ok(TopicsList);
         }
         // -------------------------AddTopics------------------------------
-        [AllowAnonymous]
+       // [AllowAnonymous]
         [HttpPost]
         [Route("AddTopic")]
+        [RoleAuthorize("Admin")]
+
         public IActionResult AddTopics([FromBody] TopicsModel topic)
         {
             try
@@ -89,6 +92,13 @@ namespace Quiz_DataBank.Controllers
                     return StatusCode(StatusCodes.Status200OK, new { message = "Topic Name Can't be Blank Or Null ", DUP = true });
 
                 }
+           
+                if (topic.Topic_Name != null || !topic.Topic_Name.IsNullOrEmpty())
+                {
+                    var topicName = new System.Globalization.CultureInfo("en-US", false).TextInfo.ToTitleCase(topic.Topic_Name.ToLower());
+                    topic.Topic_Name = topicName;
+                }
+
                 _query = _dc.InsertOrUpdateEntity(topic, "Topics_mst", -1);
 
 
@@ -107,6 +117,8 @@ namespace Quiz_DataBank.Controllers
 
         [HttpPut]
         [Route("updateTopics/{Topic_ID}")]
+       [RoleAuthorize("Admin")]
+
         public IActionResult UpdateTopic(int Topic_ID, [FromBody] TopicsModel topic)
         {
             try
@@ -129,7 +141,16 @@ namespace Quiz_DataBank.Controllers
                     return StatusCode(StatusCodes.Status200OK, new { message = "Topic Name Can't be Blank Or Null ", DUP = true });
 
                 }
+                //  var topicName = topic.Topic_Name.ToUpper();
+                if(topic.Topic_Name!=null || !topic.Topic_Name.IsNullOrEmpty())
+                {
+                    var topicName = new System.Globalization.CultureInfo("en-US", false).TextInfo.ToTitleCase(topic.Topic_Name.ToLower());
+
+                    topic.Topic_Name = topicName;
+                }
+
                 _query = _dc.InsertOrUpdateEntity(topic, "Topics_mst", Topic_ID, "Topic_ID");
+
                 return StatusCode(StatusCodes.Status200OK, new { message = "Topic Updated Successfully", DUP = false });
 
             }

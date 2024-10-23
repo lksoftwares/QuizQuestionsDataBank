@@ -9,7 +9,6 @@
         public string? Opt_C { get; set; }
         public string? Opt_D { get; set; }
         public string? Correct_Answer { get; set; }
-        public string? Status { get; set; }
         public int? Topic_ID { get; set; }
         public string? Topic_Name { get; set; }
         public int? QuesType_ID { get; set; }

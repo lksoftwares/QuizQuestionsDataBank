@@ -9,9 +9,28 @@ namespace Quiz_DataBank.Classes
         private  SqlConnection _connection;
         public Connection(IConfiguration configuration)
         {
-            string encryptedConnectionString = configuration.GetConnectionString("dbcs");
-            _ConnectionString = EncryptionHelper.Decrypt(encryptedConnectionString);
+            //string encryptedConnectionString = configuration.GetConnectionString("dbcs");
+            LkDataConnection.EncryptDecrypt _lkencr = new LkDataConnection.EncryptDecrypt();
 
+            ////   _ConnectionString = EncryptionHelper.Decrypt(encryptedConnectionString);
+            //_ConnectionString = _lkencr.Decrypt("ABC",encryptedConnectionString);
+            string encryptedServer = configuration.GetConnectionString("server");
+            string encryptedUser = configuration.GetConnectionString("user");
+            string encryptedPassword = configuration.GetConnectionString("password");
+            string encryptedDatabase = configuration.GetConnectionString("database");
+
+            string decryptedServer = _lkencr.Decrypt("ABC", encryptedServer);
+            string decryptedUser = _lkencr.Decrypt("ABC", encryptedUser);
+            string decryptedPassword = _lkencr.Decrypt("ABC", encryptedPassword);
+            string decryptedDatabase = _lkencr.Decrypt("ABC", encryptedDatabase);
+
+            string connectionString = configuration.GetConnectionString("dbcs");
+
+            _ConnectionString = connectionString
+                .Replace("$server", decryptedServer)
+                .Replace("$user", decryptedUser)
+                .Replace("$password", decryptedPassword)
+                .Replace("$database", decryptedDatabase);
             _connection = new SqlConnection(_ConnectionString);
 
         }
@@ -42,6 +61,44 @@ namespace Quiz_DataBank.Classes
                 }
             }
         }
+        //public DataTable ExecuteQueryWithResults(string query, IDictionary<string, object> sqlParam)
+        //{
+        //    using (SqlCommand command = new SqlCommand(query, _connection))
+        //    {
+        //        if (_connection.State != ConnectionState.Open)
+        //        {
+        //            _connection.Open();
+        //        }
+
+        //        foreach (var parameter in sqlParam)
+        //        {
+        //            if (parameter.Value is DateTime)
+        //            {
+        //                command.Parameters.Add(parameter.Key, SqlDbType.DateTime).Value = parameter.Value;
+        //            }
+        //            else if (parameter.Value is int)
+        //            {
+        //                command.Parameters.Add(parameter.Key, SqlDbType.Int).Value = parameter.Value;
+        //            }
+        //            else
+        //            {
+        //                command.Parameters.AddWithValue(parameter.Key, parameter.Value);
+        //            }
+        //        }
+
+        //        using (SqlDataAdapter adapter = new SqlDataAdapter(command))
+        //        {
+        //            DataTable table = new DataTable();
+        //            adapter.Fill(table);
+        //            if (table.Rows.Count == 0)
+        //            {
+        //                Console.WriteLine("No records found.");
+        //            }
+        //            return table;
+        //        }
+        //    }
+        //}
+
         public DataTable ExecuteQueryWithResults(string query, IDictionary<string, object> sqlParam)
         {
             using (SqlCommand command = new SqlCommand(query, _connection))
